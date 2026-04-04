@@ -17,9 +17,9 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      - run: uv sync --dev
-      - run: uv run ruff check src/ tests/
-      - run: uv run ruff format --check src/ tests/
+      - run: uv pip install --system ruff
+      - run: ruff check src/ tests/
+      - run: ruff format --check src/ tests/
 
   typecheck:
     runs-on: ubuntu-latest
@@ -28,8 +28,8 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      - run: uv sync --dev
-      - run: uv run mypy src/
+      - run: uv pip install --system mypy httpx rich pydantic
+      - run: mypy src/
 
   test:
     runs-on: ubuntu-latest
@@ -42,8 +42,8 @@ jobs:
         with:
           version: "latest"
       - run: uv python install ${{ matrix.python-version }}
-      - run: uv sync --dev --python ${{ matrix.python-version }}
-      - run: uv run pytest --cov --cov-report=xml
+      - run: uv pip install --system -e ".[dev]"
+      - run: pytest --cov --cov-report=xml
       - uses: codecov/codecov-action@v4
         if: matrix.python-version == '3.12'
         with:
