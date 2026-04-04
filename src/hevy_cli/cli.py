@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 
@@ -25,7 +26,7 @@ def _configure_logging(verbose: bool, debug: bool) -> None:
 
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(
-            structlog.get_level_from_name(level)
+            getattr(logging, level, 40)  # 40 = ERROR
         ),
         processors=[
             structlog.processors.add_log_level,
