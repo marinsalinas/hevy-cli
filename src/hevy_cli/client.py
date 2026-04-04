@@ -150,9 +150,7 @@ class HevyClient:
 
     # ── Workouts ───────────────────────────────────────────────────────────
 
-    def list_workouts(
-        self, page: int = 1, page_size: int = 5
-    ) -> WorkoutList:
+    def list_workouts(self, page: int = 1, page_size: int = 5) -> WorkoutList:
         """Get a paginated list of workouts."""
         data = self._get("/v1/workouts", params={"page": page, "pageSize": page_size})
         return WorkoutList.model_validate(data)
@@ -195,9 +193,7 @@ class HevyClient:
 
     # ── Routines ───────────────────────────────────────────────────────────
 
-    def list_routines(
-        self, page: int = 1, page_size: int = 5
-    ) -> RoutineList:
+    def list_routines(self, page: int = 1, page_size: int = 5) -> RoutineList:
         """Get a paginated list of routines."""
         data = self._get("/v1/routines", params={"page": page, "pageSize": page_size})
         return RoutineList.model_validate(data)
@@ -226,9 +222,7 @@ class HevyClient:
 
     # ── Routine Folders ────────────────────────────────────────────────────
 
-    def list_folders(
-        self, page: int = 1, page_size: int = 5
-    ) -> RoutineFolderList:
+    def list_folders(self, page: int = 1, page_size: int = 5) -> RoutineFolderList:
         """Get a paginated list of routine folders."""
         data = self._get("/v1/routine_folders", params={"page": page, "pageSize": page_size})
         return RoutineFolderList.model_validate(data)
@@ -246,13 +240,9 @@ class HevyClient:
 
     # ── Exercise Templates ─────────────────────────────────────────────────
 
-    def list_exercises(
-        self, page: int = 1, page_size: int = 5
-    ) -> ExerciseTemplateList:
+    def list_exercises(self, page: int = 1, page_size: int = 5) -> ExerciseTemplateList:
         """Get a paginated list of exercise templates."""
-        data = self._get(
-            "/v1/exercise_templates", params={"page": page, "pageSize": page_size}
-        )
+        data = self._get("/v1/exercise_templates", params={"page": page, "pageSize": page_size})
         return ExerciseTemplateList.model_validate(data)
 
     def get_exercise(self, exercise_id: str) -> ExerciseTemplate:
@@ -281,9 +271,7 @@ class HevyClient:
         entries = data.get("exercise_history", [])
         return [ExerciseHistoryEntry.model_validate(e) for e in entries]
 
-    def iter_all_exercises(
-        self, page_size: int = 100
-    ) -> Generator[dict[str, Any], None, None]:
+    def iter_all_exercises(self, page_size: int = 100) -> Generator[dict[str, Any], None, None]:
         """Iterate over all exercise templates across pages."""
         yield from self._paginate(
             "/v1/exercise_templates", "exercise_templates", page_size=page_size

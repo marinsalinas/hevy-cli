@@ -68,8 +68,12 @@ class TestSetNested:
 
 
 class TestLoadSave:
-    def test_load_returns_defaults_when_no_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("hevy_cli.config.config_path", lambda: tmp_path / "nonexistent" / "config.toml")
+    def test_load_returns_defaults_when_no_file(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            "hevy_cli.config.config_path", lambda: tmp_path / "nonexistent" / "config.toml"
+        )
         config = load_config()
         assert config["api"]["base_url"] == "https://api.hevy.com"
 

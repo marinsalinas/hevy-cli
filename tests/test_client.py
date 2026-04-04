@@ -49,9 +49,7 @@ class TestListWorkouts:
 class TestGetWorkout:
     @respx.mock
     def test_get_workout_success(self, client: HevyClient, sample_workout: dict) -> None:
-        respx.get("/v1/workouts/abc-123").mock(
-            return_value=Response(200, json=sample_workout)
-        )
+        respx.get("/v1/workouts/abc-123").mock(return_value=Response(200, json=sample_workout))
         result = client.get_workout("abc-123")
         assert result.id == "abc-123"
         assert len(result.exercises) == 1
@@ -59,9 +57,7 @@ class TestGetWorkout:
 
     @respx.mock
     def test_get_workout_not_found(self, client: HevyClient) -> None:
-        respx.get("/v1/workouts/nonexistent").mock(
-            return_value=Response(404)
-        )
+        respx.get("/v1/workouts/nonexistent").mock(return_value=Response(404))
         with pytest.raises(NotFoundError):
             client.get_workout("nonexistent")
 
@@ -69,9 +65,7 @@ class TestGetWorkout:
 class TestWorkoutCount:
     @respx.mock
     def test_count_workouts(self, client: HevyClient) -> None:
-        respx.get("/v1/workouts/count").mock(
-            return_value=Response(200, json={"workout_count": 42})
-        )
+        respx.get("/v1/workouts/count").mock(return_value=Response(200, json={"workout_count": 42}))
         assert client.count_workouts() == 42
 
 
@@ -91,6 +85,7 @@ class TestErrorHandling:
         )
         with pytest.raises(ValidationError):
             from hevy_cli.models import WorkoutInput
+
             client.create_workout(
                 WorkoutInput(
                     title="Test",
@@ -101,9 +96,7 @@ class TestErrorHandling:
 
     @respx.mock
     def test_rate_limit_error(self, client: HevyClient) -> None:
-        respx.get("/v1/workouts").mock(
-            return_value=Response(429, headers={"Retry-After": "30"})
-        )
+        respx.get("/v1/workouts").mock(return_value=Response(429, headers={"Retry-After": "30"}))
         with pytest.raises(RateLimitError) as exc_info:
             client.list_workouts()
         assert exc_info.value.retry_after == 30
@@ -165,9 +158,7 @@ class TestFolders:
 
     @respx.mock
     def test_create_folder(self, client: HevyClient, sample_folder: dict) -> None:
-        respx.post("/v1/routine_folders").mock(
-            return_value=Response(201, json=sample_folder)
-        )
+        respx.post("/v1/routine_folders").mock(return_value=Response(201, json=sample_folder))
         result = client.create_folder("Push Pull 🏋️‍♂️")
         assert result.title == "Push Pull 🏋️‍♂️"
         assert result.id == 42

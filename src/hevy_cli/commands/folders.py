@@ -31,7 +31,12 @@ def list_folders(ctx: click.Context, page: int, page_size: int) -> None:
     fmt = detect_format(ctx.obj.get("output_format"))
     result = client.list_folders(page=page, page_size=page_size)
     items = [f.model_dump() for f in result.routine_folders]
-    output(items, fmt=fmt, columns=FOLDER_COLUMNS, title=f"Folders (page {result.page}/{result.page_count})")
+    output(
+        items,
+        fmt=fmt,
+        columns=FOLDER_COLUMNS,
+        title=f"Folders (page {result.page}/{result.page_count})",
+    )
 
 
 @folders.command("get")

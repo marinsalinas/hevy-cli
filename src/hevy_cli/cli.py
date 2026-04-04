@@ -32,7 +32,9 @@ def _configure_logging(verbose: bool, debug: bool) -> None:
         processors=[
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
-            structlog.dev.ConsoleRenderer() if sys.stderr.isatty() else structlog.processors.JSONRenderer(),
+            structlog.dev.ConsoleRenderer()
+            if sys.stderr.isatty()
+            else structlog.processors.JSONRenderer(),
         ],
     )
 
@@ -55,6 +57,7 @@ class LazyGroup(click.Group):
         if cmd_name not in self.COMMAND_MAP:
             return None
         import importlib
+
         module_path, attr = self.COMMAND_MAP[cmd_name].rsplit(":", 1)
         module = importlib.import_module(module_path)
         return getattr(module, attr)
@@ -63,11 +66,15 @@ class LazyGroup(click.Group):
 @click.group(cls=LazyGroup)
 @click.version_option(version=__version__, prog_name="hevy")
 @click.option("--api-key", envvar="HEVY_API_KEY", help="Hevy API key")
-@click.option("--format", "output_format", type=click.Choice(["json", "table", "yaml"]), help="Output format")
+@click.option(
+    "--format", "output_format", type=click.Choice(["json", "table", "yaml"]), help="Output format"
+)
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
 @click.option("--debug", is_flag=True, help="Debug output (includes HTTP requests)")
 @click.pass_context
-def cli(ctx: click.Context, api_key: str | None, output_format: str | None, verbose: bool, debug: bool) -> None:
+def cli(
+    ctx: click.Context, api_key: str | None, output_format: str | None, verbose: bool, debug: bool
+) -> None:
     """hevy — CLI for the Hevy workout tracking API."""
     _configure_logging(verbose, debug)
     ctx.ensure_object(dict)

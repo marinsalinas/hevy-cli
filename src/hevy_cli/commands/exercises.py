@@ -47,7 +47,12 @@ def list_exercises(ctx: click.Context, page: int, page_size: int, fetch_all: boo
     else:
         result = client.list_exercises(page=page, page_size=min(page_size, 100))
         items = [e.model_dump() for e in result.exercise_templates]
-        output(items, fmt=fmt, columns=EXERCISE_COLUMNS, title=f"Exercises (page {result.page}/{result.page_count})")
+        output(
+            items,
+            fmt=fmt,
+            columns=EXERCISE_COLUMNS,
+            title=f"Exercises (page {result.page}/{result.page_count})",
+        )
 
 
 @exercises.command("get")
@@ -62,7 +67,14 @@ def get_exercise(ctx: click.Context, exercise_id: str) -> None:
 
 
 @exercises.command("create")
-@click.option("--file", "-f", "file_path", required=True, type=click.Path(exists=True), help="JSON file with exercise data")
+@click.option(
+    "--file",
+    "-f",
+    "file_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="JSON file with exercise data",
+)
 @click.pass_context
 def create_exercise(ctx: click.Context, file_path: str) -> None:
     """Create a custom exercise template from a JSON file."""
@@ -81,7 +93,9 @@ def create_exercise(ctx: click.Context, file_path: str) -> None:
 @click.option("--start", "start_date", help="Start date (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
 @click.option("--end", "end_date", help="End date (ISO 8601, e.g. 2024-12-31T23:59:59Z)")
 @click.pass_context
-def exercise_history(ctx: click.Context, exercise_id: str, start_date: str | None, end_date: str | None) -> None:
+def exercise_history(
+    ctx: click.Context, exercise_id: str, start_date: str | None, end_date: str | None
+) -> None:
     """Get exercise history for a template."""
     client = get_client(ctx)
     fmt = detect_format(ctx.obj.get("output_format"))

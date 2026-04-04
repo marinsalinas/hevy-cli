@@ -43,7 +43,12 @@ def list_routines(ctx: click.Context, page: int, page_size: int, fetch_all: bool
     else:
         result = client.list_routines(page=page, page_size=page_size)
         items = [_enrich_routine(r.model_dump()) for r in result.routines]
-        output(items, fmt=fmt, columns=ROUTINE_COLUMNS, title=f"Routines (page {result.page}/{result.page_count})")
+        output(
+            items,
+            fmt=fmt,
+            columns=ROUTINE_COLUMNS,
+            title=f"Routines (page {result.page}/{result.page_count})",
+        )
 
 
 @routines.command("get")
@@ -58,7 +63,14 @@ def get_routine(ctx: click.Context, routine_id: str) -> None:
 
 
 @routines.command("create")
-@click.option("--file", "-f", "file_path", required=True, type=click.Path(exists=True), help="JSON file with routine data")
+@click.option(
+    "--file",
+    "-f",
+    "file_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="JSON file with routine data",
+)
 @click.pass_context
 def create_routine(ctx: click.Context, file_path: str) -> None:
     """Create a routine from a JSON file."""
@@ -74,7 +86,14 @@ def create_routine(ctx: click.Context, file_path: str) -> None:
 
 @routines.command("update")
 @click.argument("routine_id")
-@click.option("--file", "-f", "file_path", required=True, type=click.Path(exists=True), help="JSON file with routine data")
+@click.option(
+    "--file",
+    "-f",
+    "file_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="JSON file with routine data",
+)
 @click.pass_context
 def update_routine(ctx: click.Context, routine_id: str, file_path: str) -> None:
     """Update an existing routine."""

@@ -44,7 +44,12 @@ def list_workouts(ctx: click.Context, page: int, page_size: int, fetch_all: bool
     else:
         result = client.list_workouts(page=page, page_size=page_size)
         items = [_enrich_workout(w.model_dump()) for w in result.workouts]
-        output(items, fmt=fmt, columns=WORKOUT_COLUMNS, title=f"Workouts (page {result.page}/{result.page_count})")
+        output(
+            items,
+            fmt=fmt,
+            columns=WORKOUT_COLUMNS,
+            title=f"Workouts (page {result.page}/{result.page_count})",
+        )
 
 
 @workouts.command("get")
@@ -59,7 +64,14 @@ def get_workout(ctx: click.Context, workout_id: str) -> None:
 
 
 @workouts.command("create")
-@click.option("--file", "-f", "file_path", required=True, type=click.Path(exists=True), help="JSON file with workout data")
+@click.option(
+    "--file",
+    "-f",
+    "file_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="JSON file with workout data",
+)
 @click.pass_context
 def create_workout(ctx: click.Context, file_path: str) -> None:
     """Create a workout from a JSON file."""
@@ -75,7 +87,14 @@ def create_workout(ctx: click.Context, file_path: str) -> None:
 
 @workouts.command("update")
 @click.argument("workout_id")
-@click.option("--file", "-f", "file_path", required=True, type=click.Path(exists=True), help="JSON file with workout data")
+@click.option(
+    "--file",
+    "-f",
+    "file_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="JSON file with workout data",
+)
 @click.pass_context
 def update_workout(ctx: click.Context, workout_id: str, file_path: str) -> None:
     """Update an existing workout."""
