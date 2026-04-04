@@ -222,7 +222,12 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
     { name = "respx" },
+    { name = "ruff" },
 ]
 
 [package.metadata]
@@ -247,7 +252,14 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "respx", specifier = ">=0.22.0" }]
+dev = [
+    { name = "mypy", specifier = ">=1.10" },
+    { name = "pre-commit", specifier = ">=3.0" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "respx", specifier = ">=0.21" },
+    { name = "ruff", specifier = ">=0.4" },
+]
 
 [[package]]
 name = "httpcore"
