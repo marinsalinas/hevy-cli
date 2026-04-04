@@ -1,0 +1,21 @@
+{
+  "workout": {
+    "title": "Friday Leg Day 🔥",
+    "description": "Medium intensity leg day focusing on quads.",
+    "start_time": "2024-08-14T12:00:00Z",
+    "end_time": "2024-08-14T12:45:00Z",
+    "is_private": false,
+    "exercises": [
+      {
+        "exercise_template_id": "D04AC939",
+        "notes": "Focus on depth and controlled tempo",
+        "sets": [
+          { "type": "warmup", "weight_kg": 60, "reps": 12 },
+          { "type": "normal", "weight_kg": 100, "reps": 10 },
+          { "type": "normal", "weight_kg": 110, "reps": 8 },
+          { "type": "normal", "weight_kg": 120, "reps": 6, "rpe": 9 }
+        ]
+      }
+    ]
+  }
+}

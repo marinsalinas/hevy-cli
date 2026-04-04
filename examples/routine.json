@@ -1,0 +1,20 @@
+{
+  "routine": {
+    "title": "2026.04 - Upper Body (Day A)",
+    "folder_id": null,
+    "notes": "Focus on form over weight. Remember to stretch.",
+    "exercises": [
+      {
+        "exercise_template_id": "D04AC939",
+        "rest_seconds": 90,
+        "notes": "Slow and controlled. Full ROM.",
+        "sets": [
+          { "type": "warmup", "weight_kg": 60, "reps": 12 },
+          { "type": "normal", "weight_kg": 80, "reps": 10 },
+          { "type": "normal", "weight_kg": 80, "reps": 10 },
+          { "type": "normal", "weight_kg": 80, "reps": 10 }
+        ]
+      }
+    ]
+  }
+}
