@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-from pydantic import ValidationError
-
 from hevy_cli.models import (
     ExerciseTemplate,
     ExerciseType,

@@ -8,7 +8,6 @@ from ..cli import get_client
 from ..models import CustomExerciseInput
 from ..output import detect_format, output
 
-
 EXERCISE_COLUMNS = [
     ("ID", "id"),
     ("Title", "title"),

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import pytest
+from typing import TYPE_CHECKING
 
 from hevy_cli.config import (
     DEFAULT_CONFIG,
@@ -14,6 +12,11 @@ from hevy_cli.config import (
     save_config,
     set_nested,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
 
 
 class TestDeepMerge:

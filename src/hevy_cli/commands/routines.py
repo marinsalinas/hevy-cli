@@ -8,7 +8,6 @@ from ..cli import get_client
 from ..models import RoutineInput, RoutineUpdateInput
 from ..output import detect_format, output
 
-
 ROUTINE_COLUMNS = [
     ("ID", "id"),
     ("Title", "title"),

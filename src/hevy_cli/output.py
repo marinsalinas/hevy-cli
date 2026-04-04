@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import yaml
 from pydantic import BaseModel
 from rich.console import Console
 from rich.table import Table
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 def _to_dicts(data: Any) -> Any:

@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 import respx
 from httpx import Response
 
-from hevy_cli.client import HevyClient
 from hevy_cli.exceptions import (
     AuthenticationError,
     NotFoundError,
     RateLimitError,
     ValidationError,
 )
+
+if TYPE_CHECKING:
+    from hevy_cli.client import HevyClient
 
 
 class TestListWorkouts:

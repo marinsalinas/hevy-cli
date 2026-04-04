@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Generator
+from typing import TYPE_CHECKING, Any
 
 import httpx
 import structlog
@@ -39,6 +39,9 @@ from .models import (
     WorkoutInput,
     WorkoutList,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 logger = structlog.get_logger()
 

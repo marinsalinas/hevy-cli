@@ -2,24 +2,21 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
-
 
 # ── Enums ──────────────────────────────────────────────────────────────────────
 
 
-class SetType(str, Enum):
+class SetType(StrEnum):
     WARMUP = "warmup"
     NORMAL = "normal"
     FAILURE = "failure"
     DROPSET = "dropset"
 
 
-class ExerciseType(str, Enum):
+class ExerciseType(StrEnum):
     WEIGHT_REPS = "weight_reps"
     REPS_ONLY = "reps_only"
     BODYWEIGHT_REPS = "bodyweight_reps"
@@ -30,7 +27,7 @@ class ExerciseType(str, Enum):
     SHORT_DISTANCE_WEIGHT = "short_distance_weight"
 
 
-class MuscleGroup(str, Enum):
+class MuscleGroup(StrEnum):
     ABDOMINALS = "abdominals"
     SHOULDERS = "shoulders"
     BICEPS = "biceps"
@@ -53,7 +50,7 @@ class MuscleGroup(str, Enum):
     OTHER = "other"
 
 
-class EquipmentCategory(str, Enum):
+class EquipmentCategory(StrEnum):
     NONE = "none"
     BARBELL = "barbell"
     DUMBBELL = "dumbbell"
@@ -73,12 +70,12 @@ class Set(BaseModel):
 
     index: int
     type: SetType
-    weight_kg: Optional[float] = None
-    reps: Optional[int] = None
-    distance_meters: Optional[float] = None
-    duration_seconds: Optional[int] = None
-    rpe: Optional[float] = None
-    custom_metric: Optional[float] = None
+    weight_kg: float | None = None
+    reps: int | None = None
+    distance_meters: float | None = None
+    duration_seconds: int | None = None
+    rpe: float | None = None
+    custom_metric: float | None = None
 
 
 class RoutineSet(BaseModel):
@@ -86,20 +83,20 @@ class RoutineSet(BaseModel):
 
     index: int
     type: SetType
-    weight_kg: Optional[float] = None
-    reps: Optional[int] = None
-    rep_range: Optional[RepRange] = None
-    distance_meters: Optional[float] = None
-    duration_seconds: Optional[int] = None
-    rpe: Optional[float] = None
-    custom_metric: Optional[float] = None
+    weight_kg: float | None = None
+    reps: int | None = None
+    rep_range: RepRange | None = None
+    distance_meters: float | None = None
+    duration_seconds: int | None = None
+    rpe: float | None = None
+    custom_metric: float | None = None
 
 
 class RepRange(BaseModel):
     """Rep range for routine sets."""
 
-    start: Optional[int] = None
-    end: Optional[int] = None
+    start: int | None = None
+    end: int | None = None
 
 
 # Fix forward reference
@@ -111,9 +108,9 @@ class Exercise(BaseModel):
 
     index: int
     title: str
-    notes: Optional[str] = None
+    notes: str | None = None
     exercise_template_id: str
-    supersets_id: Optional[int] = None
+    supersets_id: int | None = None
     sets: list[Set] = Field(default_factory=list)
 
 
@@ -122,10 +119,10 @@ class RoutineExercise(BaseModel):
 
     index: int
     title: str
-    notes: Optional[str] = None
+    notes: str | None = None
     exercise_template_id: str
-    supersets_id: Optional[int] = None
-    rest_seconds: Optional[str] = None
+    supersets_id: int | None = None
+    rest_seconds: str | None = None
     sets: list[RoutineSet] = Field(default_factory=list)
 
 
@@ -134,8 +131,8 @@ class Workout(BaseModel):
 
     id: str
     title: str
-    description: Optional[str] = None
-    routine_id: Optional[str] = None
+    description: str | None = None
+    routine_id: str | None = None
     start_time: str
     end_time: str
     updated_at: str
@@ -148,8 +145,8 @@ class Routine(BaseModel):
 
     id: str
     title: str
-    folder_id: Optional[int] = None
-    notes: Optional[str] = None
+    folder_id: int | None = None
+    notes: str | None = None
     updated_at: str
     created_at: str
     exercises: list[RoutineExercise] = Field(default_factory=list)
@@ -184,12 +181,12 @@ class ExerciseHistoryEntry(BaseModel):
     workout_start_time: str
     workout_end_time: str
     exercise_template_id: str
-    weight_kg: Optional[float] = None
-    reps: Optional[int] = None
-    distance_meters: Optional[int] = None
-    duration_seconds: Optional[int] = None
-    rpe: Optional[float] = None
-    custom_metric: Optional[float] = None
+    weight_kg: float | None = None
+    reps: int | None = None
+    distance_meters: int | None = None
+    duration_seconds: int | None = None
+    rpe: float | None = None
+    custom_metric: float | None = None
     set_type: str
 
 
@@ -200,20 +197,20 @@ class SetInput(BaseModel):
     """Input for creating/updating a set."""
 
     type: SetType = SetType.NORMAL
-    weight_kg: Optional[float] = None
-    reps: Optional[int] = None
-    distance_meters: Optional[int] = None
-    duration_seconds: Optional[int] = None
-    custom_metric: Optional[float] = None
-    rpe: Optional[float] = None
+    weight_kg: float | None = None
+    reps: int | None = None
+    distance_meters: int | None = None
+    duration_seconds: int | None = None
+    custom_metric: float | None = None
+    rpe: float | None = None
 
 
 class ExerciseInput(BaseModel):
     """Input for creating/updating an exercise in a workout."""
 
     exercise_template_id: str
-    superset_id: Optional[int] = None
-    notes: Optional[str] = None
+    superset_id: int | None = None
+    notes: str | None = None
     sets: list[SetInput] = Field(default_factory=list)
 
 
@@ -221,7 +218,7 @@ class WorkoutInput(BaseModel):
     """Input for creating/updating a workout."""
 
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     start_time: str
     end_time: str
     is_private: bool = False
@@ -232,21 +229,21 @@ class RoutineSetInput(BaseModel):
     """Input for creating/updating a routine set."""
 
     type: SetType = SetType.NORMAL
-    weight_kg: Optional[float] = None
-    reps: Optional[int] = None
-    distance_meters: Optional[int] = None
-    duration_seconds: Optional[int] = None
-    custom_metric: Optional[float] = None
-    rep_range: Optional[RepRange] = None
+    weight_kg: float | None = None
+    reps: int | None = None
+    distance_meters: int | None = None
+    duration_seconds: int | None = None
+    custom_metric: float | None = None
+    rep_range: RepRange | None = None
 
 
 class RoutineExerciseInput(BaseModel):
     """Input for creating/updating an exercise in a routine."""
 
     exercise_template_id: str
-    superset_id: Optional[int] = None
-    rest_seconds: Optional[int] = None
-    notes: Optional[str] = None
+    superset_id: int | None = None
+    rest_seconds: int | None = None
+    notes: str | None = None
     sets: list[RoutineSetInput] = Field(default_factory=list)
 
 
@@ -254,8 +251,8 @@ class RoutineInput(BaseModel):
     """Input for creating a routine."""
 
     title: str
-    folder_id: Optional[int] = None
-    notes: Optional[str] = None
+    folder_id: int | None = None
+    notes: str | None = None
     exercises: list[RoutineExerciseInput] = Field(default_factory=list)
 
 
@@ -263,7 +260,7 @@ class RoutineUpdateInput(BaseModel):
     """Input for updating a routine (no folder_id)."""
 
     title: str
-    notes: Optional[str] = None
+    notes: str | None = None
     exercises: list[RoutineExerciseInput] = Field(default_factory=list)
 
 

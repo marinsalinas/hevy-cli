@@ -5,13 +5,14 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from typing import ClassVar
 
 import click
 import structlog
 
 from . import __version__
-from .config import load_config, get_nested
 from .client import HevyClient
+from .config import get_nested, load_config
 from .exceptions import HevyError
 
 
@@ -39,7 +40,7 @@ def _configure_logging(verbose: bool, debug: bool) -> None:
 class LazyGroup(click.Group):
     """Click group that lazy-loads subcommands on first access."""
 
-    COMMAND_MAP: dict[str, str] = {
+    COMMAND_MAP: ClassVar[dict[str, str]] = {
         "workouts": "hevy_cli.commands.workouts:workouts",
         "routines": "hevy_cli.commands.routines:routines",
         "folders": "hevy_cli.commands.folders:folders",

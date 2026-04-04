@@ -7,7 +7,6 @@ import click
 from ..cli import get_client
 from ..output import detect_format, output
 
-
 FOLDER_COLUMNS = [
     ("ID", "id"),
     ("Title", "title"),
