@@ -60,7 +60,8 @@ class LazyGroup(click.Group):
 
         module_path, attr = self.COMMAND_MAP[cmd_name].rsplit(":", 1)
         module = importlib.import_module(module_path)
-        return getattr(module, attr)
+        cmd: click.Command | None = getattr(module, attr)
+        return cmd
 
 
 @click.group(cls=LazyGroup)
@@ -98,7 +99,7 @@ def cli(
 
 def get_client(ctx: click.Context) -> HevyClient:
     """Get the HevyClient from context, raising if not configured."""
-    client = ctx.obj.get("client")
+    client: HevyClient | None = ctx.obj.get("client")
     if client is None:
         raise click.ClickException(
             "API key required. Set HEVY_API_KEY, use --api-key, or run: hevy config set auth.api_key YOUR_KEY"

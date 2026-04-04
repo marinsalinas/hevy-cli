@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import click
 
 from ..cli import get_client
@@ -17,7 +19,7 @@ WORKOUT_COLUMNS = [
 ]
 
 
-def _enrich_workout(w: dict) -> dict:
+def _enrich_workout(w: dict[str, Any]) -> dict[str, Any]:
     """Add computed fields for display."""
     w["_exercise_count"] = len(w.get("exercises", []))
     return w

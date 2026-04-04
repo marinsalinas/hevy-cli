@@ -31,7 +31,8 @@ def format_json(data: Any) -> str:
 
 def format_yaml(data: Any) -> str:
     """Format data as YAML."""
-    return yaml.dump(_to_dicts(data), default_flow_style=False, sort_keys=False)
+    result: str = yaml.dump(_to_dicts(data), default_flow_style=False, sort_keys=False)
+    return result
 
 
 def format_table(

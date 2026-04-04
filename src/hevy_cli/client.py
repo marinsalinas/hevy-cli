@@ -185,7 +185,8 @@ class HevyClient:
         params: dict[str, Any] = {"page": page, "pageSize": page_size}
         if since:
             params["since"] = since
-        return self._get("/v1/workouts/events", params=params)
+        result: dict[str, Any] = self._get("/v1/workouts/events", params=params)
+        return result
 
     def iter_all_workouts(self, page_size: int = 10) -> Generator[dict[str, Any], None, None]:
         """Iterate over all workouts across pages."""
@@ -253,7 +254,8 @@ class HevyClient:
     def create_exercise(self, exercise: CustomExerciseInput) -> dict[str, Any]:
         """Create a custom exercise template."""
         payload = {"exercise": exercise.model_dump(exclude_none=True)}
-        return self._post("/v1/exercise_templates", payload)
+        result: dict[str, Any] = self._post("/v1/exercise_templates", payload)
+        return result
 
     def get_exercise_history(
         self,
@@ -286,4 +288,5 @@ class HevyClient:
         if not file_path.exists():
             raise HevyError(f"File not found: {file_path}")
         with open(file_path) as f:
-            return json.load(f)
+            result: dict[str, Any] = json.load(f)
+            return result

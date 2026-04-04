@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import click
 
 from ..cli import get_client
@@ -17,7 +19,7 @@ ROUTINE_COLUMNS = [
 ]
 
 
-def _enrich_routine(r: dict) -> dict:
+def _enrich_routine(r: dict[str, Any]) -> dict[str, Any]:
     r["_exercise_count"] = len(r.get("exercises", []))
     return r
 
