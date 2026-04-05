@@ -49,6 +49,9 @@ logger = structlog.get_logger()
 class HevyClient:
     """Synchronous HTTP client for the Hevy v1 API."""
 
+    # Fields that Hevy API rejects in PUT payloads (returns 400)
+    FORBIDDEN_UPDATE_FIELDS = frozenset({"folder_id", "id", "created_at", "updated_at"})
+
     def __init__(
         self,
         api_key: str,
@@ -96,7 +99,10 @@ class HevyClient:
         if status == 404:
             raise NotFoundError("Resource", "unknown")
         if status == 400:
-            raise ValidationError(error_msg)
+            hint = ""
+            if "folder_id" in str(error_msg).lower() or "folder" in str(error_msg).lower():
+                hint = " (Hint: Hevy API rejects folder_id in PUT payloads)"
+            raise ValidationError(f"{error_msg}{hint}")
         if status == 429:
             retry_after = response.headers.get("Retry-After")
             raise RateLimitError(int(retry_after) if retry_after else None)
@@ -147,6 +153,55 @@ class HevyClient:
             if max_pages and page >= max_pages:
                 break
             page += 1
+
+    # ── Response helpers ────────────────────────────────────────────────────
+
+    @staticmethod
+    def _normalize_routine_response(data: dict[str, Any], routine_id: str) -> dict[str, Any]:
+        """Normalize routine API response: Hevy may return routine as list or dict.
+
+        Lesson learned: Hevy API inconsistently returns routine as a list or dict.
+        Always check isinstance and take [0] if list.
+        """
+        routine_data = data.get("routine", data)
+
+        if isinstance(routine_data, list):
+            if not routine_data:
+                raise NotFoundError("Routine", routine_id)
+            routine_data = routine_data[0]
+            logger.debug("routine_response_was_list", routine_id=routine_id)
+
+        return routine_data
+
+    def _sanitize_update_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Strip forbidden fields from update payload.
+
+        CRITICAL: Hevy API returns 400 if folder_id is included in PUT payload.
+        Also strips other read-only fields (id, created_at, updated_at) that
+        may leak in when using GET response data directly as update input.
+        """
+        stripped = []
+        for field in self.FORBIDDEN_UPDATE_FIELDS:
+            if field in payload:
+                stripped.append(field)
+                del payload[field]
+
+        if stripped:
+            logger.info(
+                "sanitized_update_payload",
+                stripped_fields=stripped,
+                title=payload.get("title"),
+            )
+
+        # Also strip read-only fields from nested exercises and sets
+        for ex in payload.get("exercises", []):
+            ex.pop("index", None)
+            ex.pop("title", None)  # exercise title is read-only in update
+            for s in ex.get("sets", []):
+                s.pop("index", None)
+                s.pop("rpe", None)  # rpe is read-only in routine sets
+
+        return payload
 
     # ── Workouts ───────────────────────────────────────────────────────────
 
@@ -200,9 +255,13 @@ class HevyClient:
         return RoutineList.model_validate(data)
 
     def get_routine(self, routine_id: str) -> Routine:
-        """Get a single routine by ID."""
+        """Get a single routine by ID.
+
+        Handles the case where Hevy API may return routine as a list or dict.
+        """
+        logger.debug("getting_routine", routine_id=routine_id)
         data = self._get(f"/v1/routines/{routine_id}")
-        routine_data = data.get("routine", data)
+        routine_data = self._normalize_routine_response(data, routine_id)
         return Routine.model_validate(routine_data)
 
     def create_routine(self, routine: RoutineInput) -> Routine:
@@ -212,12 +271,24 @@ class HevyClient:
         return Routine.model_validate(data)
 
     def update_routine(self, routine_id: str, routine: RoutineUpdateInput) -> Routine:
-        """Update an existing routine."""
-        payload = {"routine": routine.model_dump(exclude_none=True)}
+        """Update an existing routine.
+
+        CRITICAL: Never include folder_id in PUT payload - Hevy returns 400.
+        The routine response may be a list or dict - normalize accordingly.
+        """
+        routine_dict = routine.model_dump(exclude_none=True)
+        self._sanitize_update_payload(routine_dict)
+
+        payload = {"routine": routine_dict}
+        logger.debug(
+            "updating_routine",
+            routine_id=routine_id,
+            title=routine_dict.get("title"),
+            exercise_count=len(routine_dict.get("exercises", [])),
+        )
+
         data = self._put(f"/v1/routines/{routine_id}", payload)
-        routine_data = data.get("routine", data)
-        if isinstance(routine_data, list):
-            routine_data = routine_data[0]
+        routine_data = self._normalize_routine_response(data, routine_id)
         return Routine.model_validate(routine_data)
 
     def iter_all_routines(self, page_size: int = 10) -> Generator[dict[str, Any], None, None]:

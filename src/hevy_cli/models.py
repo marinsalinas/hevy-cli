@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # ── Enums ──────────────────────────────────────────────────────────────────────
 
@@ -257,7 +257,14 @@ class RoutineInput(BaseModel):
 
 
 class RoutineUpdateInput(BaseModel):
-    """Input for updating a routine (no folder_id)."""
+    """Input for updating a routine (no folder_id).
+
+    Uses extra="forbid" to catch accidental inclusion of read-only or
+    forbidden fields (folder_id, id, created_at, updated_at).
+    Lesson learned: Hevy API returns 400 if folder_id is in PUT payload.
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     title: str
     notes: str | None = None

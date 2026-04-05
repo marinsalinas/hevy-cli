@@ -2,14 +2,28 @@
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 from typing import Any
 
 import click
+import structlog
 
 from ..cli import get_client
 from ..models import RoutineInput, RoutineUpdateInput
 from ..output import detect_format, output
+from ..utils import (
+    calculate_dropset_weight,
+    calculate_rest_seconds,
+    calculate_warmup_weight,
+    enhance_coach_notes,
+    extract_rep_range_from_notes,
+    get_rpe_for_range,
+    sanitize_routine_for_update,
+)
+
+logger = structlog.get_logger()
 
 _UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
 
@@ -56,6 +70,80 @@ def _resolve_folder_names(routines: list[dict[str, Any]], client: Any) -> list[d
         else:
             r["_folder_name"] = "—"
     return routines
+
+
+_VALID_SET_TYPES = frozenset({"warmup", "normal", "dropset", "failure"})
+
+
+def _normalize_routine_data(data: dict[str, Any]) -> dict[str, Any]:
+    """Convert response-format routine data to update-input format.
+
+    Strips read-only fields and maps field-name differences so that JSON
+    obtained from ``routines get`` can be fed directly into ``routines update``.
+
+    CRITICAL: Never includes folder_id - Hevy API rejects PUT with folder_id (400 error).
+    Preserves all set types (warmup, normal, dropset, failure).
+    """
+    # Use centralized sanitization to strip all forbidden/read-only fields
+    sanitize_routine_for_update(data)
+
+    normalized: dict[str, Any] = {
+        "title": data["title"],
+        "notes": data.get("notes"),
+        "exercises": [],
+    }
+
+    # Validate and log set types being preserved
+    set_type_counts: dict[str, int] = {}
+
+    for ex in data.get("exercises", []):
+        norm_sets = []
+        for s in ex.get("sets", []):
+            set_type = s.get("type", "normal")
+
+            # Validate set type (Hevy API only accepts these 4 values)
+            if set_type not in _VALID_SET_TYPES:
+                logger.warning(
+                    "invalid_set_type_detected",
+                    exercise=ex.get("title", "unknown"),
+                    set_type=set_type,
+                    defaulting_to="normal",
+                )
+                set_type = "normal"
+
+            set_type_counts[set_type] = set_type_counts.get(set_type, 0) + 1
+
+            rep_range = s.get("rep_range")
+            norm_sets.append(
+                {
+                    "type": set_type,
+                    "weight_kg": s.get("weight_kg"),
+                    "reps": s.get("reps"),
+                    "distance_meters": s.get("distance_meters"),
+                    "duration_seconds": s.get("duration_seconds"),
+                    "custom_metric": s.get("custom_metric"),
+                    "rep_range": rep_range,
+                }
+            )
+        normalized["exercises"].append(
+            {
+                "exercise_template_id": ex["exercise_template_id"],
+                # Response uses "supersets_id"; input model uses "superset_id"
+                "superset_id": ex.get("superset_id") or ex.get("supersets_id"),
+                "rest_seconds": ex.get("rest_seconds"),
+                "notes": ex.get("notes"),
+                "sets": norm_sets,
+            }
+        )
+
+    logger.debug(
+        "normalized_routine_data",
+        title=normalized["title"],
+        exercise_count=len(normalized["exercises"]),
+        set_types=set_type_counts,
+    )
+
+    return normalized
 
 
 @click.group()
@@ -164,12 +252,33 @@ def create_routine(ctx: click.Context, file_path: str) -> None:
 )
 @click.pass_context
 def update_routine(ctx: click.Context, routine_id: str, file_path: str) -> None:
-    """Update an existing routine."""
+    """Update an existing routine.
+
+    Follows the read-first pattern: verifies the routine exists before updating.
+    Normalizes payload to strip folder_id and preserve set types.
+    """
     client = get_client(ctx)
     fmt = detect_format(ctx.obj.get("output_format"))
+
+    # Step 1: Verify routine exists (read-first pattern from lessons learned)
+    try:
+        existing = client.get_routine(routine_id)
+        logger.debug(
+            "update_read_first",
+            routine_id=routine_id,
+            title=existing.title,
+            exercise_count=len(existing.exercises),
+        )
+    except Exception as e:
+        raise click.ClickException(f"Routine {routine_id} not found: {e}") from None
+
+    # Step 2: Load and normalize the update payload
     data = client.load_json_file(file_path)
     routine_data = data.get("routine", data)
-    routine = RoutineUpdateInput.model_validate(routine_data)
+    normalized = _normalize_routine_data(routine_data)
+    routine = RoutineUpdateInput.model_validate(normalized)
+
+    # Step 3: Apply update
     result = client.update_routine(routine_id, routine)
     output(result, fmt=fmt, columns=ROUTINE_COLUMNS, title="Updated Routine")
     click.echo("✅ Routine updated", err=True)
@@ -214,48 +323,173 @@ def rename_routine(ctx: click.Context, id_or_search: str, new_name: str) -> None
         old_title = routine["title"]
 
     # Build update payload preserving existing data
-    update_data = RoutineUpdateInput(
-        title=new_name,
-        notes=routine.get("notes"),
-        exercises=[],
-    )
-    # Preserve exercises from the existing routine
-    existing_exercises = routine.get("exercises", [])
-    if existing_exercises:
-        from ..models import RepRange, RoutineExerciseInput, RoutineSetInput
-
-        exercise_inputs = []
-        for ex in existing_exercises:
-            set_inputs = []
-            for s in ex.get("sets", []):
-                rep_range = None
-                if s.get("rep_range"):
-                    rep_range = RepRange(
-                        start=s["rep_range"].get("start"),
-                        end=s["rep_range"].get("end"),
-                    )
-                set_inputs.append(
-                    RoutineSetInput(
-                        type=s.get("type", "normal"),
-                        weight_kg=s.get("weight_kg"),
-                        reps=s.get("reps"),
-                        distance_meters=s.get("distance_meters"),
-                        duration_seconds=s.get("duration_seconds"),
-                        custom_metric=s.get("custom_metric"),
-                        rep_range=rep_range,
-                    )
-                )
-            exercise_inputs.append(
-                RoutineExerciseInput(
-                    exercise_template_id=ex["exercise_template_id"],
-                    superset_id=ex.get("superset_id"),
-                    rest_seconds=ex.get("rest_seconds"),
-                    notes=ex.get("notes"),
-                    sets=set_inputs,
-                )
-            )
-        update_data.exercises = exercise_inputs
+    normalized = _normalize_routine_data(routine)
+    normalized["title"] = new_name
+    update_data = RoutineUpdateInput.model_validate(normalized)
 
     result = client.update_routine(routine_id, update_data)
     output(result, fmt=fmt, columns=ROUTINE_COLUMNS, title="Renamed Routine")
     click.echo(f"✅ Routine renamed: '{old_title}' → '{new_name}'", err=True)
+
+
+@routines.command("enhance")
+@click.argument("routine_id")
+@click.option(
+    "--output", "-o", "output_path", type=click.Path(), help="Save enhanced routine to JSON file"
+)
+@click.option("--dry-run", is_flag=True, help="Preview changes without applying")
+@click.option(
+    "--working-weight-multiplier",
+    default=1.0,
+    type=float,
+    help="Multiplier for working weights (e.g., 0.9 for deload)",
+)
+@click.pass_context
+def enhance_routine(
+    ctx: click.Context,
+    routine_id: str,
+    output_path: str | None,
+    dry_run: bool,
+    working_weight_multiplier: float,
+) -> None:
+    """Enhance a routine with smart defaults (rest_seconds, RPE, progression rules).
+
+    Follows the 3-step pattern: read → enhance → update.
+    Preserves all coach data (set types, notes, exercise order).
+
+    ROUTINE_ID is the UUID of the routine to enhance.
+    """
+    client = get_client(ctx)
+    fmt = detect_format(ctx.obj.get("output_format"))
+
+    logger.info("enhancing_routine", routine_id=routine_id, dry_run=dry_run)
+
+    # Step 1: Read original routine
+    click.echo(f"📖 Reading routine {routine_id}...", err=True)
+    try:
+        routine = client.get_routine(routine_id)
+    except Exception as e:
+        raise click.ClickException(f"Failed to fetch routine: {e}") from None
+
+    routine_dict = routine.model_dump()
+    original_exercises = routine_dict.get("exercises", [])
+
+    click.echo(f"   Found {len(original_exercises)} exercises", err=True)
+
+    # Step 2: Enhance exercises
+    enhanced_exercises = []
+    changes_log = []
+
+    for _idx, ex in enumerate(original_exercises):
+        original_notes = ex.get("notes", "") or ""
+        sets = ex.get("sets", [])
+
+        # Extract rep range from notes
+        rep_range = extract_rep_range_from_notes(original_notes)
+
+        # Calculate rest_seconds based on rep range
+        rest_seconds = calculate_rest_seconds(rep_range) if rep_range else 90
+
+        # Get RPE for the rep range
+        target_rpe = get_rpe_for_range(rep_range) if rep_range else None
+
+        # Build progression rule based on rep range
+        progression_rule = None
+        if rep_range:
+            progression_rule = f"Add weight when hitting top of {rep_range} rep range"
+
+        # Enhance notes (append, never replace)
+        enhanced_notes = enhance_coach_notes(
+            original_notes,
+            target_rpe=target_rpe,
+            progression_rule=progression_rule,
+        )
+
+        if enhanced_notes != original_notes:
+            changes_log.append(f"  {ex.get('title', 'Exercise')}: enhanced notes")
+
+        # Process sets - preserve types, calculate weights for warmup/dropset
+        enhanced_sets = []
+        working_weight = None
+
+        for s in sets:
+            set_type = s.get("type", "normal")
+            weight_kg = s.get("weight_kg")
+
+            # Track working weight from first normal set
+            if set_type == "normal" and weight_kg and working_weight is None:
+                working_weight = weight_kg * working_weight_multiplier
+
+            # Calculate warmup/dropset weights if working weight known
+            final_weight = weight_kg
+            if working_weight and weight_kg is None:
+                if set_type == "warmup":
+                    final_weight = calculate_warmup_weight(working_weight)
+                    changes_log.append(f"    Added warmup: {final_weight}kg")
+                elif set_type == "dropset":
+                    final_weight = calculate_dropset_weight(working_weight)
+                    changes_log.append(f"    Added dropset: {final_weight}kg")
+
+            enhanced_sets.append(
+                {
+                    "type": set_type,
+                    "weight_kg": final_weight,
+                    "reps": s.get("reps"),
+                    "distance_meters": s.get("distance_meters"),
+                    "duration_seconds": s.get("duration_seconds"),
+                    "custom_metric": s.get("custom_metric"),
+                    "rep_range": s.get("rep_range"),
+                }
+            )
+
+        enhanced_exercises.append(
+            {
+                "exercise_template_id": ex["exercise_template_id"],
+                "superset_id": ex.get("superset_id") or ex.get("supersets_id"),
+                "rest_seconds": rest_seconds,
+                "notes": enhanced_notes,
+                "sets": enhanced_sets,
+            }
+        )
+
+    # Build enhanced routine payload (NO folder_id - lesson learned!)
+    enhanced_payload = {
+        "title": routine_dict["title"],
+        "notes": routine_dict.get("notes"),
+        "exercises": enhanced_exercises,
+    }
+
+    # Show changes
+    click.echo("\n📝 Changes to be applied:", err=True)
+    if changes_log:
+        for line in changes_log:
+            click.echo(line, err=True)
+    else:
+        click.echo("  No significant changes needed", err=True)
+
+    click.echo(f"\n   Exercises: {len(enhanced_exercises)}", err=True)
+    click.echo(
+        f"   Average rest: {sum(e.get('rest_seconds', 90) for e in enhanced_exercises) // len(enhanced_exercises)}s",
+        err=True,
+    )
+
+    # Save to file if requested
+    if output_path:
+        output_data = {"routine": enhanced_payload}
+        Path(output_path).write_text(json.dumps(output_data, indent=2))
+        click.echo(f"\n💾 Saved enhanced routine to {output_path}", err=True)
+
+    # Step 3: Update if not dry-run
+    if not dry_run:
+        click.echo("\n🚀 Updating routine...", err=True)
+        try:
+            update_data = RoutineUpdateInput.model_validate(enhanced_payload)
+            result = client.update_routine(routine_id, update_data)
+            output(result, fmt=fmt, columns=ROUTINE_COLUMNS, title="Enhanced Routine")
+            click.echo("✅ Routine enhanced successfully", err=True)
+        except Exception as e:
+            raise click.ClickException(f"Failed to update routine: {e}") from None
+    else:
+        click.echo("\n⏸️ Dry run - no changes applied", err=True)
+        if fmt == "json":
+            output({"routine": enhanced_payload}, fmt="json")
