@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 import structlog
 
@@ -285,7 +286,7 @@ def validate_set_type(set_type: str) -> str:
     return normalized
 
 
-def sanitize_routine_for_update(data: dict) -> dict:
+def sanitize_routine_for_update(data: dict[str, Any]) -> dict[str, Any]:
     """Strip all read-only and forbidden fields from routine data for PUT.
 
     This is the canonical function for preparing routine data for the Hevy API
@@ -329,7 +330,7 @@ def build_set_with_weight(
     weight_kg: float | None = None,
     reps: int | None = None,
     working_weight: float | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Build a set dict with appropriate weight calculation.
 
     Args:

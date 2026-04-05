@@ -163,7 +163,9 @@ class HevyClient:
         Lesson learned: Hevy API inconsistently returns routine as a list or dict.
         Always check isinstance and take [0] if list.
         """
-        routine_data = data.get("routine", data)
+        from typing import cast
+
+        routine_data: Any = data.get("routine", data)
 
         if isinstance(routine_data, list):
             if not routine_data:
@@ -171,7 +173,7 @@ class HevyClient:
             routine_data = routine_data[0]
             logger.debug("routine_response_was_list", routine_id=routine_id)
 
-        return routine_data
+        return cast("dict[str, Any]", routine_data)
 
     def _sanitize_update_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Strip forbidden fields from update payload.
