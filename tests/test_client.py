@@ -142,6 +142,22 @@ class TestRoutines:
         assert len(result.routines) == 1
         assert result.routines[0].title == "Upper Body 💪"
 
+    @respx.mock
+    def test_update_routine(self, client: HevyClient, sample_routine: dict) -> None:
+        """API returns {"routine": [{ ... }]} — verify we unwrap correctly."""
+        from hevy_cli.models import RoutineUpdateInput
+
+        updated = {**sample_routine, "title": "Renamed Routine"}
+        respx.put("/v1/routines/routine-456").mock(
+            return_value=Response(200, json={"routine": [updated]})
+        )
+        result = client.update_routine(
+            "routine-456",
+            RoutineUpdateInput(title="Renamed Routine", exercises=[]),
+        )
+        assert result.title == "Renamed Routine"
+        assert result.id == "routine-456"
+
 
 class TestFolders:
     @respx.mock

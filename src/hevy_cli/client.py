@@ -215,7 +215,10 @@ class HevyClient:
         """Update an existing routine."""
         payload = {"routine": routine.model_dump(exclude_none=True)}
         data = self._put(f"/v1/routines/{routine_id}", payload)
-        return Routine.model_validate(data)
+        routine_data = data.get("routine", data)
+        if isinstance(routine_data, list):
+            routine_data = routine_data[0]
+        return Routine.model_validate(routine_data)
 
     def iter_all_routines(self, page_size: int = 10) -> Generator[dict[str, Any], None, None]:
         """Iterate over all routines across pages."""
