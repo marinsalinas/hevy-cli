@@ -122,7 +122,7 @@ class RoutineExercise(BaseModel):
     notes: str | None = None
     exercise_template_id: str
     supersets_id: int | None = None
-    rest_seconds: str | None = None
+    rest_seconds: int | None = None
     sets: list[RoutineSet] = Field(default_factory=list)
 
 
