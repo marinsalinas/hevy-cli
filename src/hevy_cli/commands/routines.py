@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import click
@@ -9,6 +10,8 @@ import click
 from ..cli import get_client
 from ..models import RoutineInput, RoutineUpdateInput
 from ..output import detect_format, output
+
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
 
 ROUTINE_COLUMNS = [
     ("ID", "id"),
@@ -173,35 +176,42 @@ def update_routine(ctx: click.Context, routine_id: str, file_path: str) -> None:
 
 
 @routines.command("rename")
-@click.argument("name")
+@click.argument("id_or_search")
 @click.argument("new_name")
 @click.pass_context
-def rename_routine(ctx: click.Context, name: str, new_name: str) -> None:
-    """Rename a routine by partial name match.
+def rename_routine(ctx: click.Context, id_or_search: str, new_name: str) -> None:
+    """Rename a routine by ID or partial name match.
 
-    NAME is a partial match for the routine to rename.
+    ID_OR_SEARCH is either a routine UUID or a partial name to search for.
     NEW_NAME is the new title for the routine.
     """
     client = get_client(ctx)
     fmt = detect_format(ctx.obj.get("output_format"))
 
-    # Find routine by partial name match
-    all_routines = list(client.iter_all_routines(page_size=10))
-    name_lower = name.lower()
-    matches = [r for r in all_routines if name_lower in r.get("title", "").lower()]
+    if _UUID_RE.match(id_or_search):
+        # Direct lookup by ID
+        result = client.get_routine(id_or_search)
+        routine = result.model_dump()
+        routine_id = routine["id"]
+        old_title = routine["title"]
+    else:
+        # Find routine by partial name match
+        all_routines = list(client.iter_all_routines(page_size=10))
+        name_lower = id_or_search.lower()
+        matches = [r for r in all_routines if name_lower in r.get("title", "").lower()]
 
-    if not matches:
-        raise click.ClickException(f"No routine found matching '{name}'")
+        if not matches:
+            raise click.ClickException(f"No routine found matching '{id_or_search}'")
 
-    if len(matches) > 1:
-        titles = "\n".join(f"  - {r['title']} (ID: {r['id']})" for r in matches)
-        raise click.ClickException(
-            f"Multiple routines match '{name}':\n{titles}\nPlease be more specific."
-        )
+        if len(matches) > 1:
+            titles = "\n".join(f"  - {r['title']} (ID: {r['id']})" for r in matches)
+            raise click.ClickException(
+                f"Multiple routines match '{id_or_search}':\n{titles}\nPlease be more specific."
+            )
 
-    routine = matches[0]
-    routine_id = routine["id"]
-    old_title = routine["title"]
+        routine = matches[0]
+        routine_id = routine["id"]
+        old_title = routine["title"]
 
     # Build update payload preserving existing data
     update_data = RoutineUpdateInput(
