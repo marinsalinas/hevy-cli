@@ -1,21 +1,25 @@
 # hevy-cli
 
-> Production-ready CLI for the [Hevy](https://hevy.com) workout tracking API.
+> A typed, testable CLI for the [Hevy](https://hevy.com) workout tracking API.
 
 [![CI](https://github.com/marinsalinas/hevy-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/marinsalinas/hevy-cli/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/marinsalinas/hevy-cli/branch/main/graph/badge.svg)](https://codecov.io/gh/marinsalinas/hevy-cli)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/marinsalinas/hevy-cli/main.svg)](https://results.pre-commit.ci/latest/github/marinsalinas/hevy-cli/main)
 [![PyPI](https://img.shields.io/pypi/v/hevy-cli)](https://pypi.org/project/hevy-cli/)
 [![Python](https://img.shields.io/pypi/pyversions/hevy-cli)](https://pypi.org/project/hevy-cli/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
-- 🏋️ Full Hevy API coverage — workouts, routines, folders, exercises, history
-- 📊 Multiple output formats — table (rich), JSON, YAML
-- 🔄 Auto-pagination — fetch all results with `--all`
-- 🔐 Flexible auth — env var, flag, or config file
-- ⚡ Fast startup — lazy-loaded command groups
-- 🔁 Retry logic — exponential backoff on rate limits and server errors
-- 🧪 Well-tested — pytest + respx, 80%+ coverage target
+- Full Hevy API coverage — workouts, routines, folders, exercises, history
+- Multiple output formats — table (rich), JSON, YAML (auto-selected by TTY)
+- Auto-pagination — fetch all results with `--all`
+- Flexible auth — env var, flag, or config file (XDG-compliant)
+- Typed end-to-end — pydantic v2 models, mypy `--strict`, pyright-friendly
+- Retry logic — exponential backoff on rate limits and server errors (tenacity)
+- Structured logging — `structlog` with JSON output in `--debug`
+- Tested — pytest + respx against the real API shapes
 
 ## Installation
 
@@ -159,6 +163,16 @@ uv run hevy --help
 | Routines | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | Folders | ✅ | ✅ | ✅ | — | — | — | — |
 | Exercises | ✅ | ✅ | ✅ | — | — | — | ✅ |
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, commit conventions, and pull-request flow. Start with issues labelled [`good first issue`](https://github.com/marinsalinas/hevy-cli/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+
+Architecture decisions and rationale are captured in [ARCHITECTURE.md](ARCHITECTURE.md). Security issues should follow the private disclosure path in [SECURITY.md](SECURITY.md) — please do not file them as public issues.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html); pre-1.0 minor releases may include breaking changes.
 
 ## License
 

@@ -1,0 +1,39 @@
+version: 2
+updates:
+  # Python dependencies (uv uses the pip ecosystem — Dependabot reads pyproject.toml).
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      python-minor-and-patch:
+        update-types: ["minor", "patch"]
+        # Keep major bumps in separate PRs for deliberate review.
+
+  # GitHub Actions pinned in .github/workflows/
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      actions-minor-and-patch:
+        update-types: ["minor", "patch"]

@@ -1,0 +1,80 @@
+name: Bug report
+description: Report unexpected behaviour in hevy-cli
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill in as much of the form as you can — it makes triage significantly faster.
+
+        Before filing, please search [existing issues](https://github.com/marinsalinas/hevy-cli/issues?q=is%3Aissue) to avoid duplicates.
+
+  - type: input
+    id: version
+    attributes:
+      label: hevy-cli version
+      description: Output of `hevy --version`.
+      placeholder: "0.2.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python --version` (or `uv run python --version`).
+      placeholder: "3.12.3"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 14.5 / Ubuntu 24.04 / Windows 11"
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command invoked
+      description: The exact `hevy ...` command you ran. Please **redact** any API key or workout IDs you consider private.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include the full output. Re-run with `--debug` if relevant. Redact API keys.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Config excerpts (with API key redacted), related issues, hypotheses.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Pre-submit checklist
+      options:
+        - label: I searched existing issues and this does not duplicate one
+          required: true
+        - label: I redacted my Hevy API key from all command output and config pasted above
+          required: true

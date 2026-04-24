@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/marinsalinas/hevy-cli/discussions
+    about: For usage questions, ideas, and open-ended discussion, please use Discussions rather than opening an issue.
+  - name: Security vulnerability
+    url: https://github.com/marinsalinas/hevy-cli/security/advisories/new
+    about: Please report security issues privately via a GitHub Security Advisory. See SECURITY.md for details.
