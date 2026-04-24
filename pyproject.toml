@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "hevy-cli"
 version = "0.2.0"
-description = "Production-ready CLI for the Hevy workout tracking API"
+description = "CLI for the Hevy workout tracking API"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
@@ -14,10 +14,11 @@ authors = [
 ]
 keywords = ["hevy", "workout", "fitness", "cli", "tracking"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -115,4 +116,4 @@ branch = true
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 60
+fail_under = 70

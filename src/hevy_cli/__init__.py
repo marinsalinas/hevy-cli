@@ -1,3 +1,3 @@
-"""hevy-cli — Production-ready CLI for the Hevy workout tracking API."""
+"""hevy-cli — CLI for the Hevy workout tracking API."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"  # x-release-please-version

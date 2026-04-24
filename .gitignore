@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -12,4 +13,17 @@ build/
 coverage.xml
 htmlcov/
 .venv/
-*.lock
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+.envrc
+config.toml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

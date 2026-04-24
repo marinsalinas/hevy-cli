@@ -205,3 +205,36 @@ hevy workouts list | jq '.[0].title'   # Auto-JSON when piped
 hevy -v workouts list                  # Verbose (INFO)
 hevy --debug workouts list             # Debug (includes HTTP requests)
 ```
+
+## API Coverage
+
+Mapped against the [Hevy OpenAPI v0.0.1 spec](https://api.hevyapp.com/docs).
+
+| Endpoint | Method | CLI Command | Notes |
+|----------|--------|-------------|-------|
+| `/v1/workouts` | GET | `workouts list` | Paginated, page/pageSize |
+| `/v1/workouts` | POST | `workouts create` | From JSON file |
+| `/v1/workouts/{id}` | GET | `workouts get` | By workout ID |
+| `/v1/workouts/{id}` | PUT | `workouts update` | From JSON file |
+| `/v1/workouts/count` | GET | `workouts count` | Total count |
+| `/v1/workouts/events` | GET | `workouts events` | Sync events since date |
+| `/v1/routines` | GET | `routines list` | Paginated |
+| `/v1/routines` | POST | `routines create` | From JSON file |
+| `/v1/routines/{id}` | GET | `routines get` | By routine ID |
+| `/v1/routines/{id}` | PUT | `routines update` | From JSON file |
+| `/v1/routine_folders` | GET | `folders list` | Paginated |
+| `/v1/routine_folders` | POST | `folders create` | By title |
+| `/v1/routine_folders/{id}` | GET | `folders get` | By folder ID |
+| `/v1/exercise_templates` | GET | `exercises list` | Paginated (max 100/page) |
+| `/v1/exercise_templates` | POST | `exercises create` | Custom exercise |
+| `/v1/exercise_templates/{id}` | GET | `exercises get` | By template ID |
+| `/v1/exercise_history/{id}` | GET | `exercises history` | By template ID + date range |
+
+### Not in the upstream API
+
+The following operations have no corresponding Hevy API endpoint and are therefore not supported:
+
+- Workout delete (no `DELETE /v1/workouts/{id}`)
+- Routine delete (no `DELETE /v1/routines/{id}`)
+- Routine folder update/delete (no `PUT` / `DELETE /v1/routine_folders/{id}`)
+- User profile (no endpoint in spec)
