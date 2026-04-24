@@ -1,3 +1,10 @@
+ci:
+  # pre-commit.ci config — autofixes and weekly autoupdate PRs.
+  autofix_prs: true
+  autoupdate_schedule: weekly
+  # Skip mypy on pre-commit.ci because deps can't be fully resolved there.
+  skip: [mypy]
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.4
@@ -23,3 +30,10 @@ repos:
           - platformdirs>=4.0
         pass_filenames: false
         args: [src/]
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: []

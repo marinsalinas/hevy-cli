@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "python",
+  "packages": {
+    ".": {
+      "package-name": "hevy-cli",
+      "include-component-in-tag": false,
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/hevy_cli/__init__.py"
+        }
+      ],
+      "draft": false,
+      "prerelease": false,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false,
+      "changelog-sections": [
+        { "type": "feat", "section": "Added" },
+        { "type": "fix", "section": "Fixed" },
+        { "type": "perf", "section": "Changed", "hidden": false },
+        { "type": "refactor", "section": "Changed", "hidden": false },
+        { "type": "revert", "section": "Fixed", "hidden": false },
+        { "type": "docs", "section": "Docs", "hidden": true },
+        { "type": "style", "hidden": true },
+        { "type": "chore", "hidden": true },
+        { "type": "test", "hidden": true },
+        { "type": "build", "hidden": true },
+        { "type": "ci", "hidden": true }
+      ]
+    }
+  }
+}
