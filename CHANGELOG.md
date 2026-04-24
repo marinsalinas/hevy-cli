@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 releases may include breaking changes in minor versions.
 
+## [0.3.0](https://github.com/marinsalinas/hevy-cli/compare/v0.2.0...v0.3.0) (2026-04-24)
+
+
+### Added
+
+* add folder filtering, search, and webhooks docs ([f5baede](https://github.com/marinsalinas/hevy-cli/commit/f5baede1babe5e5dd14f4f38a590753f176ea79a))
+* initial architecture for hevy-cli ([da97341](https://github.com/marinsalinas/hevy-cli/commit/da973410e24ed7a292aac9b066a375997415b89e))
+* support UUID lookup in routines rename command ([c8bf415](https://github.com/marinsalinas/hevy-cli/commit/c8bf4158a31338edbf1d05e4cc350e90b44c3c60))
+
+
+### Fixed
+
+* change RoutineExercise.rest_seconds type from str to int ([2821ec4](https://github.com/marinsalinas/hevy-cli/commit/2821ec4dd44d6fe42ca7d48e3c1bac38d2795680))
+* correct classifier and logging imports ([af1cd72](https://github.com/marinsalinas/hevy-cli/commit/af1cd72735ecd8eba360fdc60e5b23eb472cf600))
+* handle API response wrapper in update_routine ([54db9a0](https://github.com/marinsalinas/hevy-cli/commit/54db9a08f099103dab17a9351f9fe9d308a782a2))
+* resolve mypy and ruff CI errors ([c70deab](https://github.com/marinsalinas/hevy-cli/commit/c70deabed785944972e6f1d9338f2f4f49b691df))
+
+
+### Changed
+
+* apply Hevy API lessons from smart coach process ([90308cf](https://github.com/marinsalinas/hevy-cli/commit/90308cf270ee3f030be38a9513f98e95e6ff45f2))
+
 ## [Unreleased]
 
 ### Added
