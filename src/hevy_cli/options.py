@@ -23,7 +23,11 @@ def format_option(fn: Callable[..., Any]) -> Callable[..., Any]:
         help="Output format",
         default=None,
     )
-    @click.pass_context  # type: ignore[arg-type]  # functools.wraps wraps the signature in a way mypy can't see through
+    # functools.wraps below shadows the wrapper's signature with fn's, which
+    # some mypy versions read as incompatible with pass_context's expected
+    # Callable shape. The `unused-ignore` tag quiets the newer mypy that can
+    # actually see through it. Either way, the call is safe at runtime.
+    @click.pass_context  # type: ignore[arg-type, unused-ignore]
     @functools.wraps(fn)
     def wrapper(ctx: click.Context, output_format: str, *args: Any, **kwargs: Any) -> Any:
         if ctx.get_parameter_source("output_format") == ParameterSource.COMMANDLINE:
