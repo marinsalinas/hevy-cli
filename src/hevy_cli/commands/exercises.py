@@ -6,6 +6,7 @@ import click
 
 from ..cli import get_client
 from ..models import CustomExerciseInput
+from ..options import format_option
 from ..output import detect_format, output
 
 EXERCISE_COLUMNS = [
@@ -35,6 +36,7 @@ def exercises() -> None:
 @click.option("--page", default=1, type=int, help="Page number")
 @click.option("--page-size", default=5, type=int, help="Items per page (max 100)")
 @click.option("--all", "fetch_all", is_flag=True, help="Fetch all pages")
+@format_option
 @click.pass_context
 def list_exercises(ctx: click.Context, page: int, page_size: int, fetch_all: bool) -> None:
     """List exercise templates."""
@@ -57,6 +59,7 @@ def list_exercises(ctx: click.Context, page: int, page_size: int, fetch_all: boo
 
 @exercises.command("get")
 @click.argument("exercise_id")
+@format_option
 @click.pass_context
 def get_exercise(ctx: click.Context, exercise_id: str) -> None:
     """Get an exercise template by ID."""
@@ -75,6 +78,7 @@ def get_exercise(ctx: click.Context, exercise_id: str) -> None:
     type=click.Path(exists=True),
     help="JSON file with exercise data",
 )
+@format_option
 @click.pass_context
 def create_exercise(ctx: click.Context, file_path: str) -> None:
     """Create a custom exercise template from a JSON file."""
@@ -92,6 +96,7 @@ def create_exercise(ctx: click.Context, file_path: str) -> None:
 @click.argument("exercise_id")
 @click.option("--start", "start_date", help="Start date (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
 @click.option("--end", "end_date", help="End date (ISO 8601, e.g. 2024-12-31T23:59:59Z)")
+@format_option
 @click.pass_context
 def exercise_history(
     ctx: click.Context, exercise_id: str, start_date: str | None, end_date: str | None

@@ -5,6 +5,7 @@ from __future__ import annotations
 import click
 
 from ..cli import get_client
+from ..options import format_option
 from ..output import detect_format, output
 
 FOLDER_COLUMNS = [
@@ -24,6 +25,7 @@ def folders() -> None:
 @folders.command("list")
 @click.option("--page", default=1, type=int, help="Page number")
 @click.option("--page-size", default=5, type=int, help="Items per page (max 10)")
+@format_option
 @click.pass_context
 def list_folders(ctx: click.Context, page: int, page_size: int) -> None:
     """List routine folders."""
@@ -41,6 +43,7 @@ def list_folders(ctx: click.Context, page: int, page_size: int) -> None:
 
 @folders.command("get")
 @click.argument("folder_id")
+@format_option
 @click.pass_context
 def get_folder(ctx: click.Context, folder_id: str) -> None:
     """Get a folder by ID."""
@@ -52,6 +55,7 @@ def get_folder(ctx: click.Context, folder_id: str) -> None:
 
 @folders.command("create")
 @click.argument("title")
+@format_option
 @click.pass_context
 def create_folder(ctx: click.Context, title: str) -> None:
     """Create a routine folder."""
