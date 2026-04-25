@@ -10,6 +10,8 @@ from typing import Any
 import click
 import structlog
 
+from hevy_cli.options import format_option
+
 from ..cli import get_client
 from ..models import RoutineInput, RoutineUpdateInput
 from ..output import detect_format, output
@@ -157,6 +159,7 @@ def routines() -> None:
 @click.option("--all", "fetch_all", is_flag=True, help="Fetch all pages")
 @click.option("--folder-id", type=int, default=None, help="Filter by folder ID")
 @click.option("--search", type=str, default=None, help="Search routines by name (case-insensitive)")
+@format_option
 @click.pass_context
 def list_routines(
     ctx: click.Context,
@@ -209,6 +212,7 @@ def list_routines(
 
 @routines.command("get")
 @click.argument("routine_id")
+@format_option
 @click.pass_context
 def get_routine(ctx: click.Context, routine_id: str) -> None:
     """Get a routine by ID."""
@@ -227,6 +231,7 @@ def get_routine(ctx: click.Context, routine_id: str) -> None:
     type=click.Path(exists=True),
     help="JSON file with routine data",
 )
+@format_option
 @click.pass_context
 def create_routine(ctx: click.Context, file_path: str) -> None:
     """Create a routine from a JSON file."""
@@ -250,6 +255,7 @@ def create_routine(ctx: click.Context, file_path: str) -> None:
     type=click.Path(exists=True),
     help="JSON file with routine data",
 )
+@format_option
 @click.pass_context
 def update_routine(ctx: click.Context, routine_id: str, file_path: str) -> None:
     """Update an existing routine.
@@ -287,6 +293,7 @@ def update_routine(ctx: click.Context, routine_id: str, file_path: str) -> None:
 @routines.command("rename")
 @click.argument("id_or_search")
 @click.argument("new_name")
+@format_option
 @click.pass_context
 def rename_routine(ctx: click.Context, id_or_search: str, new_name: str) -> None:
     """Rename a routine by ID or partial name match.
@@ -344,6 +351,7 @@ def rename_routine(ctx: click.Context, id_or_search: str, new_name: str) -> None
     type=float,
     help="Multiplier for working weights (e.g., 0.9 for deload)",
 )
+@format_option
 @click.pass_context
 def enhance_routine(
     ctx: click.Context,

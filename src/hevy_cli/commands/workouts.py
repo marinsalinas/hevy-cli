@@ -8,6 +8,7 @@ import click
 
 from ..cli import get_client
 from ..models import WorkoutInput
+from ..options import format_option
 from ..output import detect_format, output
 
 WORKOUT_COLUMNS = [
@@ -34,6 +35,7 @@ def workouts() -> None:
 @click.option("--page", default=1, type=int, help="Page number")
 @click.option("--page-size", default=5, type=int, help="Items per page (max 10)")
 @click.option("--all", "fetch_all", is_flag=True, help="Fetch all pages")
+@format_option
 @click.pass_context
 def list_workouts(ctx: click.Context, page: int, page_size: int, fetch_all: bool) -> None:
     """List workouts."""
@@ -56,6 +58,7 @@ def list_workouts(ctx: click.Context, page: int, page_size: int, fetch_all: bool
 
 @workouts.command("get")
 @click.argument("workout_id")
+@format_option
 @click.pass_context
 def get_workout(ctx: click.Context, workout_id: str) -> None:
     """Get a workout by ID."""
@@ -74,6 +77,7 @@ def get_workout(ctx: click.Context, workout_id: str) -> None:
     type=click.Path(exists=True),
     help="JSON file with workout data",
 )
+@format_option
 @click.pass_context
 def create_workout(ctx: click.Context, file_path: str) -> None:
     """Create a workout from a JSON file."""
@@ -97,6 +101,7 @@ def create_workout(ctx: click.Context, file_path: str) -> None:
     type=click.Path(exists=True),
     help="JSON file with workout data",
 )
+@format_option
 @click.pass_context
 def update_workout(ctx: click.Context, workout_id: str, file_path: str) -> None:
     """Update an existing workout."""
@@ -111,6 +116,7 @@ def update_workout(ctx: click.Context, workout_id: str, file_path: str) -> None:
 
 
 @workouts.command("count")
+@format_option
 @click.pass_context
 def count_workouts(ctx: click.Context) -> None:
     """Get total workout count."""
@@ -127,6 +133,7 @@ def count_workouts(ctx: click.Context) -> None:
 @click.option("--since", help="ISO 8601 date to fetch events since")
 @click.option("--page", default=1, type=int, help="Page number")
 @click.option("--page-size", default=5, type=int, help="Items per page (max 10)")
+@format_option
 @click.pass_context
 def list_events(ctx: click.Context, since: str | None, page: int, page_size: int) -> None:
     """List workout events (updates/deletes) since a date."""
