@@ -164,6 +164,20 @@ uv run hevy --help
 | Folders | ✅ | ✅ | ✅ | — | — | — | — |
 | Exercises | ✅ | ✅ | ✅ | — | — | — | ✅ |
 
+## Use with Claude Code
+
+This package ships a [Claude Code skill](https://docs.claude.com/en/docs/claude-code) so Claude can query your Hevy data directly through `hevy` instead of writing one-off HTTP scripts. Roughly 2–3× fewer tokens per Hevy-related prompt and no auth/pagination/error-handling drift.
+
+```bash
+# One-time install (from a clone of this repo)
+mkdir -p ~/.claude/skills
+cp -r skills/hevy ~/.claude/skills/
+```
+
+Then ask Claude things like *"summarise my workouts from this week"* or *"what's my bench press PR?"* — the skill activates automatically based on its description.
+
+See [docs/claude-skill.md](docs/claude-skill.md) for the install guide, customisation, and troubleshooting. An MCP server (cross-platform — Claude Desktop, Cursor, opencode, Continue) is planned for a future release.
+
 ## Contributing
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, commit conventions, and pull-request flow. Start with issues labelled [`good first issue`](https://github.com/marinsalinas/hevy-cli/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
