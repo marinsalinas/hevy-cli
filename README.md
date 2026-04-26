@@ -3,6 +3,7 @@
 > A typed, testable CLI for the [Hevy](https://hevy.com) workout tracking API.
 
 [![CI](https://github.com/marinsalinas/hevy-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/marinsalinas/hevy-cli/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/marinsalinas/hevy-cli/actions/workflows/codeql.yml/badge.svg)](https://github.com/marinsalinas/hevy-cli/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/marinsalinas/hevy-cli/branch/main/graph/badge.svg)](https://codecov.io/gh/marinsalinas/hevy-cli)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/marinsalinas/hevy-cli/main.svg)](https://results.pre-commit.ci/latest/github/marinsalinas/hevy-cli/main)
 [![PyPI](https://img.shields.io/pypi/v/hevy-cli)](https://pypi.org/project/hevy-cli/)
