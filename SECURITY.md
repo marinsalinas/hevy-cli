@@ -32,12 +32,19 @@ Please include:
 - Fix released as a patch version; coordinated disclosure timeline agreed with the reporter.
 - Credit in the advisory and changelog unless you request anonymity.
 
+## Proactive measures in this repo
+
+- **CodeQL** static analysis runs on every push/PR to `main` plus weekly. Findings appear under [Security → Code scanning](https://github.com/marinsalinas/hevy-cli/security/code-scanning).
+- **Dependabot** opens grouped weekly PRs for Python and GitHub Actions dependencies; major bumps are kept separate for deliberate review.
+- **PyPI Trusted Publishing (OIDC)** + **Sigstore attestations** on every release — no long-lived API tokens in the repo, artifacts are cryptographically attested.
+- **Branch protection** on `main` requires PR + passing CI matrix (3.11 / 3.12 / 3.13) before merge.
+
 ## Scope
 
 In scope:
 
 - The `hevy-cli` codebase in this repository.
-- The packaging/publishing pipeline (`.github/workflows/release.yml`, PyPI artifact integrity).
+- The packaging/publishing pipeline (`.github/workflows/release-please.yml`, PyPI artifact integrity).
 - Handling of user-supplied API keys (storage, logging, masking, environment precedence).
 
 Out of scope:

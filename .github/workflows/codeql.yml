@@ -1,0 +1,48 @@
+name: CodeQL
+
+# CodeQL static analysis. Findings appear in Security → Code scanning.
+# Runs on push to main, on every PR to main, and weekly on Mondays as a
+# safety net for queries that get updated upstream between active changes.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "29 7 * * 1" # Mondays 07:29 UTC — off-peak so it doesn't fight Dependabot
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # security-and-quality is broader than security-extended;
+          # surfaces both vulnerability and maintainability findings.
+          queries: security-and-quality
+
+      # Pure-Python project, autobuild is a no-op but kept for the
+      # canonical CodeQL pattern in case future code adds extensions.
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
