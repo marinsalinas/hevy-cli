@@ -36,8 +36,19 @@ def mock_api(base_url: str):
 
 
 @pytest.fixture(autouse=True)
-def isolated_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
-    """Redirect XDG config to tmp_path so tests never read the developer's real config."""
+def isolated_config(
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> Path | None:
+    """Redirect XDG config to tmp_path so tests never read the developer's real config.
+
+    Opt out with @pytest.mark.no_isolated_config for tests that need to exercise
+    the real config_path()/config_dir()/data_dir() resolvers; those tests should
+    monkeypatch hevy_cli.config.platformdirs.user_config_dir themselves.
+    """
+    if request.node.get_closest_marker("no_isolated_config"):
+        return None
     fake = tmp_path / "config.toml"
     monkeypatch.setattr("hevy_cli.config.config_path", lambda: fake)
     return fake
