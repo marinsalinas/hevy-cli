@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
 import pytest
 import respx
 
@@ -28,6 +33,14 @@ def mock_api(base_url: str):
     """Context manager for mocking Hevy API calls with respx."""
     with respx.mock(base_url=base_url) as mock:
         yield mock
+
+
+@pytest.fixture(autouse=True)
+def isolated_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    """Redirect XDG config to tmp_path so tests never read the developer's real config."""
+    fake = tmp_path / "config.toml"
+    monkeypatch.setattr("hevy_cli.config.config_path", lambda: fake)
+    return fake
 
 
 # ── Sample response data ──────────────────────────────────────────────────────
