@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 releases may include breaking changes in minor versions.
 
+## [0.4.0](https://github.com/marinsalinas/hevy-cli/compare/v0.3.0...v0.4.0) (2026-05-08)
+
+
+### Added
+
+* add --since/--until date filters to workouts list ([#18](https://github.com/marinsalinas/hevy-cli/issues/18)) ([c25254f](https://github.com/marinsalinas/hevy-cli/commit/c25254f20044926c4cd5768d6441e038b326bd0b))
+
+
+### Fixed
+
+* **tests:** isolate XDG config so tests do not leak local config ([#20](https://github.com/marinsalinas/hevy-cli/issues/20)) ([96e9295](https://github.com/marinsalinas/hevy-cli/commit/96e929560f72ee163ea899d5c20f486187c1a74c))
+
 ## [0.3.0](https://github.com/marinsalinas/hevy-cli/compare/v0.2.2...v0.3.0) (2026-04-26)
 
 
