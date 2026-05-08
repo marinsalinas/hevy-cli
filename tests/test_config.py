@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path
+
+import pytest
 
 from hevy_cli.config import (
     DEFAULT_CONFIG,
     _deep_merge,
+    config_dir,
+    config_path,
+    data_dir,
     get_nested,
     load_config,
     save_config,
     set_nested,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    import pytest
 
 
 class TestDeepMerge:
@@ -87,3 +87,28 @@ class TestLoadSave:
 
         loaded = load_config()
         assert loaded["auth"]["api_key"] == "test-key-123"
+
+
+# ── Path resolvers ────────────────────────────────────────────────────────────
+# These opt out of the autouse `isolated_config` fixture in conftest.py so the
+# real config_path()/config_dir()/data_dir() functions execute, with platformdirs
+# mocked instead. Without the opt-out, `config_path` is monkeypatched to a stub
+# and its body is never exercised.
+
+
+@pytest.mark.no_isolated_config
+def test_config_dir_wraps_platformdirs(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("hevy_cli.config.platformdirs.user_config_dir", lambda app: "/fake/conf")
+    assert config_dir() == Path("/fake/conf")
+
+
+@pytest.mark.no_isolated_config
+def test_data_dir_wraps_platformdirs(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("hevy_cli.config.platformdirs.user_data_dir", lambda app: "/fake/data")
+    assert data_dir() == Path("/fake/data")
+
+
+@pytest.mark.no_isolated_config
+def test_config_path_appends_config_toml(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("hevy_cli.config.platformdirs.user_config_dir", lambda app: "/fake/conf")
+    assert config_path() == Path("/fake/conf") / "config.toml"

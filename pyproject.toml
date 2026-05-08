@@ -108,6 +108,7 @@ testpaths = ["tests"]
 addopts = "-ra -q --strict-markers"
 markers = [
     "integration: marks tests as integration tests",
+    "no_isolated_config: opt out of the autouse XDG config isolation fixture (for tests that exercise the real config_path/config_dir/data_dir resolvers)",
 ]
 
 [tool.coverage.run]

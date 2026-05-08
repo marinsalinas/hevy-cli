@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -45,13 +46,15 @@ def load_config() -> dict[str, Any]:
     """Load config from TOML file, merging with defaults."""
     path = config_path()
     if not path.exists():
-        return DEFAULT_CONFIG.copy()
+        return copy.deepcopy(DEFAULT_CONFIG)
 
     with open(path, "rb") as f:
         user_config = tomllib.load(f)
 
-    # Deep merge: defaults ← user overrides
-    merged = _deep_merge(DEFAULT_CONFIG.copy(), user_config)
+    # Deep merge: defaults ← user overrides. deepcopy is required because
+    # _deep_merge mutates its `base` argument in place; a shallow .copy()
+    # would let it write through into DEFAULT_CONFIG's nested dicts.
+    merged = _deep_merge(copy.deepcopy(DEFAULT_CONFIG), user_config)
     return merged
 
 
