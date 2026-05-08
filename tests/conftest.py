@@ -69,6 +69,20 @@ def sample_workout() -> dict:
 
 
 @pytest.fixture
+def multi_workout_response(sample_workout: dict) -> dict:
+    """Three workouts at different dates for date-range filter tests."""
+    return {
+        "page": 1,
+        "page_count": 1,
+        "workouts": [
+            {**sample_workout, "id": "workout-aug-10", "start_time": "2024-08-10T12:00:00Z"},
+            {**sample_workout, "id": "workout-aug-14", "start_time": "2024-08-14T12:00:00Z"},
+            {**sample_workout, "id": "workout-aug-20", "start_time": "2024-08-20T12:00:00Z"},
+        ],
+    }
+
+
+@pytest.fixture
 def sample_routine() -> dict:
     return {
         "id": "routine-456",

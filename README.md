@@ -75,6 +75,9 @@ hevy workouts get abc123
 # List all workouts (auto-paginate)
 hevy workouts list --all
 
+# Filter by date range (YYYY-MM-DD, both bounds inclusive)
+hevy workouts list --since 2026-01-01 --until 2026-03-31 --all
+
 # Count total workouts
 hevy workouts count
 
