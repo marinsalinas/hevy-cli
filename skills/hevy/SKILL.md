@@ -36,7 +36,7 @@ All commands accept `--format json` (default for piping) or `--format table|yaml
 
 | Operation | Command | Notes |
 |---|---|---|
-| List recent workouts | `hevy workouts list --format json` | Paginated, default 5/page; add `--all` to fetch all pages |
+| List recent workouts | `hevy workouts list --format json` | Paginated, default 5/page; add `--all` to fetch all pages. Filter by date with `--since YYYY-MM-DD` and/or `--until YYYY-MM-DD` (both bounds inclusive) |
 | Get one workout | `hevy workouts get <id> --format json` | |
 | Total count | `hevy workouts count` | Returns just the integer |
 | Sync events | `hevy workouts events --since 2026-01-01T00:00:00Z --format json` | Updates/deletes since timestamp |
@@ -99,8 +99,10 @@ The CLI suppresses tracebacks by default. Pass `--debug` to see HTTP requests an
 
 ### Show this week's workouts
 
+Prefer `--since` over jq filtering — it pushes the filter into the CLI and avoids dumping unwanted workouts into context:
+
 ```bash
-hevy workouts list --all --format json | jq '[.[] | select(.start_time >= "2026-04-19T00:00:00Z")] | length'
+hevy workouts list --since 2026-04-19 --all --format json | jq -r '.[] | "\(.start_time[:10])  \(.title)"'
 ```
 
 Then summarise titles, dates, and total volume in plain text.
