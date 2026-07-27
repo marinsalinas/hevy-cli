@@ -48,6 +48,26 @@ def test_workouts_list_no_api_key() -> None:
 
 
 @respx.mock
+def test_workouts_list_uses_api_key_from_keychain(monkeypatch, sample_workout: dict) -> None:
+    monkeypatch.setattr("hevy_cli.cli.get_api_key", lambda: "key-from-keychain")
+    route = respx.get("https://api.hevy.com/v1/workouts").mock(
+        return_value=Response(
+            200,
+            json={"page": 1, "page_count": 1, "workouts": [sample_workout]},
+        )
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        ["--format", "json", "workouts", "list"],
+        env={"HEVY_API_KEY": ""},
+    )
+
+    assert result.exit_code == 0, result.output
+    assert route.calls[0].request.headers["api-key"] == "key-from-keychain"
+
+
+@respx.mock
 def test_workouts_list_with_since(multi_workout_response: dict) -> None:
     respx.get("https://api.hevy.com/v1/workouts").mock(
         return_value=Response(

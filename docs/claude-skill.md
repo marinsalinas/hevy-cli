@@ -15,7 +15,9 @@ Compared to letting Claude write `httpx` code from scratch, this saves roughly 2
 
 ## One-time install
 
-Prerequisites: `pip install hevy-cli`, then set `HEVY_API_KEY` (see [main README](../README.md#configure)).
+Prerequisites: `pip install hevy-cli`, then run `hevy auth login` to store the
+API key in the operating system credential store (see [main
+README](../README.md#configure)).
 
 ```bash
 # From a clone of this repo

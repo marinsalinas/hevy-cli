@@ -35,10 +35,18 @@ New architectural decisions should be added to the list below as dated sections 
 Priority order:
 1. --api-key flag (highest)
 2. HEVY_API_KEY environment variable
-3. config.toml → api_key field
+3. Operating system credential store
+4. config.toml → api_key field (legacy)
 ```
 
-The API key is sent as `api-key` header on every request. Never logged or printed in output.
+Interactive users authenticate with `hevy auth login`. The `keyring` package
+selects macOS Keychain, Windows Credential Locker, or a Secret
+Service-compatible backend on Linux. Environment variables and flags remain
+available for headless automation. Plaintext config remains supported for
+backward compatibility but is not recommended.
+
+The API key is sent as `api-key` header on every request. It is never logged or
+printed in output.
 
 ### 4. Configuration → **XDG + TOML**
 
@@ -47,9 +55,6 @@ The API key is sent as `api-key` header on every request. Never logged or printe
 - Config file: `config.toml`
 
 ```toml
-[auth]
-api_key = "your-api-key-here"
-
 [output]
 format = "table"  # json | table | yaml
 color = true

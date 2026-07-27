@@ -13,6 +13,7 @@ import structlog
 from . import __version__
 from .client import HevyClient
 from .config import get_nested, load_config
+from .credentials import get_api_key
 from .exceptions import HevyError
 
 
@@ -47,6 +48,7 @@ class LazyGroup(click.Group):
         "routines": "hevy_cli.commands.routines:routines",
         "folders": "hevy_cli.commands.folders:folders",
         "exercises": "hevy_cli.commands.exercises:exercises",
+        "auth": "hevy_cli.commands.auth_cmd:auth",
         "config": "hevy_cli.commands.config_cmd:config",
     }
 
@@ -84,8 +86,13 @@ def cli(
     ctx.obj["config"] = config
     ctx.obj["output_format"] = output_format
 
-    # Resolve API key: flag > env > config
-    resolved_key = api_key or os.environ.get("HEVY_API_KEY") or get_nested(config, "auth.api_key")
+    # Resolve API key: flag > env > system credential store > legacy config
+    resolved_key = (
+        api_key
+        or os.environ.get("HEVY_API_KEY")
+        or get_api_key()
+        or get_nested(config, "auth.api_key")
+    )
     if resolved_key:
         ctx.obj["client"] = HevyClient(
             api_key=resolved_key,
@@ -102,7 +109,7 @@ def get_client(ctx: click.Context) -> HevyClient:
     client: HevyClient | None = ctx.obj.get("client")
     if client is None:
         raise click.ClickException(
-            "API key required. Set HEVY_API_KEY, use --api-key, or run: hevy config set auth.api_key YOUR_KEY"
+            "API key required. Run `hevy auth login`, set HEVY_API_KEY, or use --api-key"
         )
     return client
 

@@ -39,6 +39,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- System credential-store authentication through `hevy auth login`, `status`,
+  and `logout`, with macOS Keychain, Windows Credential Locker, and Linux
+  Secret Service support.
 - This changelog.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`SECURITY.md`](SECURITY.md) for open-source hygiene.
 - GitHub issue templates (bug report, feature request) and pull request template under [`.github/`](.github/).

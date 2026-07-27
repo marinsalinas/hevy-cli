@@ -16,7 +16,7 @@
 - Full Hevy API coverage — workouts, routines, folders, exercises, history
 - Multiple output formats — table (rich), JSON, YAML (auto-selected by TTY)
 - Auto-pagination — fetch all results with `--all`
-- Flexible auth — env var, flag, or config file (XDG-compliant)
+- Secure auth — OS keychain, env var, flag, or legacy config file
 - Typed end-to-end — pydantic v2 models, mypy `--strict`, pyright-friendly
 - Retry logic — exponential backoff on rate limits and server errors (tenacity)
 - Structured logging — `structlog` with JSON output in `--debug`
@@ -53,13 +53,19 @@ Go to [hevy.com/settings?developer](https://hevy.com/settings?developer) (requir
 ### 2. Configure
 
 ```bash
-# Option A: Environment variable
+# Option A: System credential store (recommended)
+hevy auth login
+
+# Check which credential source is active
+hevy auth status
+
+# Option B: Environment variable
 export HEVY_API_KEY="your-api-key"
 
-# Option B: Config file
+# Option C: Config file (legacy; stores the key as plaintext)
 hevy config set auth.api_key "your-api-key"
 
-# Option C: Per-command flag
+# Option D: Per-command flag
 hevy --api-key "your-api-key" workouts list
 ```
 
@@ -124,9 +130,6 @@ hevy workouts list --format yaml
 Config is stored at `~/.config/hevy/config.toml` (XDG compliant):
 
 ```toml
-[auth]
-api_key = "your-api-key"
-
 [output]
 format = "table"    # json | table | yaml
 color = true
@@ -136,6 +139,11 @@ base_url = "https://api.hevy.com"
 timeout = 30
 max_retries = 3
 ```
+
+API keys are stored in the operating system credential store by `hevy auth
+login` (macOS Keychain, Windows Credential Locker, or a Secret Service-compatible
+keyring on Linux). The `auth.api_key` config setting remains supported for
+backward compatibility, but stores the key as plaintext and is not recommended.
 
 ## Development
 

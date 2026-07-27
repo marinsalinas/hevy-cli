@@ -4,18 +4,26 @@
 
 You need a Hevy Pro account to use the API. Get your key at [hevy.com/settings?developer](https://hevy.com/settings?developer).
 
-Three ways to authenticate:
+Four ways to authenticate:
 
 ```bash
-# 1. Environment variable (recommended)
+# 1. Operating system credential store (recommended)
+hevy auth login
+hevy auth status
+
+# 2. Environment variable
 export HEVY_API_KEY="your-api-key"
 
-# 2. Config file
+# 3. Config file (legacy; stores the key as plaintext)
 hevy config set auth.api_key "your-api-key"
 
-# 3. Per-command flag
+# 4. Per-command flag
 hevy --api-key "your-api-key" workouts list
 ```
+
+`hevy auth login` uses macOS Keychain, Windows Credential Locker, or a
+Secret Service-compatible keyring on Linux. Remove the stored credential with
+`hevy auth logout`.
 
 ## Workouts
 
@@ -184,8 +192,8 @@ hevy exercises history D04AC939 --start 2024-01-01T00:00:00Z --end 2024-12-31T23
 ## Configuration
 
 ```bash
-hevy config show                       # Show config (API key masked)
-hevy config get auth.api_key           # Get a value
+hevy auth status                       # Show the active credential source
+hevy config show                       # Show non-secret configuration
 hevy config set output.format yaml     # Set a value
 hevy config path                       # Show config file path
 ```

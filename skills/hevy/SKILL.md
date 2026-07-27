@@ -19,12 +19,11 @@ Before invoking any Hevy command, verify the environment is ready:
 
 ```bash
 hevy --version            # confirms the CLI is installed
-hevy config show          # confirms HEVY_API_KEY or config.toml is set (key is masked)
+hevy auth status          # confirms a keychain, environment, or legacy credential is set
 ```
 
-If `config show` reports no API key, tell the user to either:
-- `export HEVY_API_KEY="..."` (preferred), or
-- `hevy config set auth.api_key "..."`
+If `auth status` reports no API key, tell the user to run `hevy auth login`.
+For headless automation, `HEVY_API_KEY` remains supported.
 
 A Hevy Pro subscription is required to obtain an API key (`https://hevy.com/settings?developer`).
 
@@ -88,7 +87,7 @@ data = json.loads(subprocess.check_output(["hevy", "workouts", "list", "--all", 
 
 | Exit code / output | Meaning | What to tell the user |
 |---|---|---|
-| `AuthenticationError: InvalidApiKey` | API key wrong or missing | Check `HEVY_API_KEY` env var or run `hevy config show` |
+| `AuthenticationError: InvalidApiKey` | API key wrong or missing | Run `hevy auth status`; authenticate again with `hevy auth login` |
 | `NotFoundError` | ID does not exist | Confirm the ID; for routines, try search-by-name with `hevy routines rename` |
 | `RateLimitError` | Hit the per-minute limit | The CLI auto-retries with backoff; if still failing, suggest a brief pause |
 | `Error: No such option: --foo` | You typed a flag wrong | Re-check `hevy <subcommand> --help` before retrying |
@@ -137,7 +136,7 @@ hevy routines list --all --format json | jq 'group_by(.folder_id) | map({folder:
 Do not, even when it seems convenient:
 
 - Write `httpx`, `requests`, or `urllib` calls to `api.hevy.com` directly. Use the CLI.
-- Hardcode API keys in scripts. Read from `HEVY_API_KEY`.
+- Hardcode API keys in scripts. Use `hevy auth login`; use `HEVY_API_KEY` only for headless automation.
 - Skip `--format json` and try to parse table output. The table format is for humans.
 - Use `--debug` in production scripts. It dumps request bodies including headers (sanitised, but still noisy).
 - Loop over individual `hevy workouts get <id>` calls when `hevy workouts list --all` returns the same data in one paginated stream.

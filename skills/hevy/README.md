@@ -10,7 +10,7 @@ Concrete benefits:
 
 - **~2-3× fewer tokens** per Hevy-related request than letting Claude write standalone Python.
 - **No more "Claude reinvents `httpx` calls"** — every interaction goes through the CLI's typed pydantic models.
-- **Auth handling is centralised** — Claude reads `HEVY_API_KEY` once via the CLI; never asks you for the key.
+- **Auth handling is centralised** — the CLI reads the key from the operating system credential store; Claude never asks you for it.
 - **Errors are predictable** — the CLI's typed exception hierarchy (`AuthenticationError`, `NotFoundError`, `RateLimitError`) maps to user-facing messages in the skill.
 
 ## Prerequisites
@@ -19,7 +19,7 @@ Concrete benefits:
 - `hevy-cli` installed and authenticated:
   ```bash
   pip install hevy-cli
-  export HEVY_API_KEY="your-key"   # or: hevy config set auth.api_key "..."
+  hevy auth login
   hevy --version                   # should print 0.3.0+ (Skill support added in 0.3.0)
   ```
 
@@ -74,7 +74,7 @@ After editing, save the file. The next prompt picks up the change; no reload ste
 |---|---|---|
 | Claude writes Python instead of using the CLI | Skill not loaded | Verify `~/.claude/skills/hevy/SKILL.md` exists |
 | `hevy: command not found` in Claude's Bash output | CLI not installed or not on `PATH` | `pip install hevy-cli`; ensure your venv is active |
-| `AuthenticationError: InvalidApiKey` | API key missing/wrong | `export HEVY_API_KEY="..."` |
+| `AuthenticationError: InvalidApiKey` | API key missing/wrong | `hevy auth status`, then `hevy auth login` |
 | Claude dumps full JSON payload | Skill is loaded but Claude is being literal | Add a "summarise — never dump full payloads" note to your prompt |
 
 ## Roadmap

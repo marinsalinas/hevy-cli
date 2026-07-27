@@ -51,6 +51,8 @@ def isolated_config(
         return None
     fake = tmp_path / "config.toml"
     monkeypatch.setattr("hevy_cli.config.config_path", lambda: fake)
+    # Never read the developer's real operating-system credential store in tests.
+    monkeypatch.setattr("hevy_cli.cli.get_api_key", lambda: None)
     return fake
 
 
