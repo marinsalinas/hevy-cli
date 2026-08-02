@@ -93,7 +93,9 @@ class HevyClient:
             error_msg = body.get("error", response.text)
         except (json.JSONDecodeError, ValueError):
             error_msg = response.text
-        error_msg = str(error_msg).replace(self.api_key, "[REDACTED]")
+        error_msg = str(error_msg)
+        if self.api_key:
+            error_msg = error_msg.replace(self.api_key, "[REDACTED]")
 
         if status in (401, 403):
             raise AuthenticationError(error_msg)
