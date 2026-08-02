@@ -30,8 +30,9 @@ DEFAULT_RPE = 7.5
 
 _COACH_RPE_RE = re.compile(
     r"(?<![\w])rpe\s*@\s*(?P<low>\d+(?:\.\d+)?)"
+    # Possessive so an invalid range like 6-7kg cannot backtrack to a single 6.
     r"(?:\s*[-\u2010\u2013\u2014\u2212]\s*(?P<high>\d+(?:\.\d+)?))?+"
-    r"(?![\d.])(?![A-Za-z])",
+    r"(?!\d)(?![A-Za-z])",
     re.IGNORECASE,
 )
 

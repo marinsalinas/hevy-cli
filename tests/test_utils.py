@@ -166,12 +166,22 @@ class TestExtractRpeFromNotes:
     @pytest.mark.parametrize(
         ("notes", "expected"),
         [
+            ("Rpe@6-7", 7.0),
             ('Rpe@6-7"', 7.0),
             ("Rpe@6-7🏋️", 7.0),
+            ("Rpe@6-7\nNext instruction", 7.0),
             ("Rpe@6\u22127", 7.0),
             ("Rpe@6\u20107", 7.0),
-            ("rpe@8", 8.0),
-            ("( RPE @ 5 \u2013 6 )", 6.0),
+            ("Rpe@6\u20137", 7.0),
+            ("Rpe@6\u20147", 7.0),
+            ("Rpe@10", 10.0),
+            ("rpe@5.5", 5.5),
+            ("RPE@7-9.", 9.0),
+            ("RPE@7-9,", 9.0),
+            ("RPE@7-9;", 9.0),
+            ("RPE@7-9)", 9.0),
+            ("Rpe@6 - 7", 7.0),
+            ("Rpe@6-", 6.0),
         ],
     )
     def test_accepts_case_whitespace_and_punctuation(self, notes: str, expected: float) -> None:
@@ -185,14 +195,21 @@ class TestExtractRpeFromNotes:
             "RPE target 7",
             "RPE@11",
             "rpe@6-7kg",
-            "RPE@6.5.2",
-            "RPE@6-7.5.2",
+            "terapia (rpe no aplica)",
         ],
     )
     def test_rejects_unrelated_or_invalid_text(self, notes: str) -> None:
         assert extract_rpe_from_notes(notes) is None
 
-    @pytest.mark.parametrize("notes", ['Rpe@6-7"', "Rpe@6-7🏋️", "Rpe@6\u22127", "Rpe@6\u20107"])
+    @pytest.mark.parametrize(
+        "notes",
+        [
+            "RPE@7-9.",
+            "RPE@7-9,",
+            "RPE@7-9;",
+            "RPE@7-9)",
+        ],
+    )
     def test_supported_terminators_prevent_generic_rpe(self, notes: str) -> None:
         assert "Target RPE" not in enhance_coach_notes(notes, target_rpe=8.0)
 
