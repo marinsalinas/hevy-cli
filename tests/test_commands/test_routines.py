@@ -640,10 +640,35 @@ def test_enhance_without_coach_rpe_keeps_generic_target(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0, result.output
-    notes = json.loads(output_path.read_text())["routine"]["exercises"][0]["notes"]
-    assert notes == (
-        "5-8(Sobrecarga) | Target RPE 8.0 | Add weight when hitting top of 5-8 rep range"
-    )
+    saved = json.loads(output_path.read_text())
+    assert saved == {
+        "routine": {
+            "title": "Coach Plan",
+            "notes": None,
+            "exercises": [
+                {
+                    "exercise_template_id": "D04AC939",
+                    "superset_id": None,
+                    "rest_seconds": 120,
+                    "notes": (
+                        "5-8(Sobrecarga) | Target RPE 8.0 | "
+                        "Add weight when hitting top of 5-8 rep range"
+                    ),
+                    "sets": [
+                        {
+                            "type": "normal",
+                            "weight_kg": 80.0,
+                            "reps": 10,
+                            "distance_meters": None,
+                            "duration_seconds": None,
+                            "custom_metric": None,
+                            "rep_range": None,
+                        }
+                    ],
+                }
+            ],
+        }
+    }
 
 
 @respx.mock
@@ -702,6 +727,155 @@ def test_enhance_rest_only_composes_with_dry_run(tmp_path: Path) -> None:
     assert exercise["notes"] == original_notes
     assert exercise["rest_seconds"] == 120
     assert "Exercise 0: rest unset -> 120" in result.output
+
+
+@respx.mock
+def test_enhance_rest_only_skips_weight_derivation_while_default_derives(
+    tmp_path: Path,
+) -> None:
+    routine_response = _enhance_routine_response(["5 x 5"])
+    routine_response["routine"]["exercises"][0]["sets"] = [
+        {
+            "index": 0,
+            "type": "normal",
+            "weight_kg": 100,
+            "reps": 5,
+            "rep_range": None,
+            "distance_meters": None,
+            "duration_seconds": None,
+            "rpe": None,
+            "custom_metric": None,
+        },
+        {
+            "index": 1,
+            "type": "warmup",
+            "weight_kg": None,
+            "reps": 5,
+            "rep_range": None,
+            "distance_meters": None,
+            "duration_seconds": None,
+            "rpe": None,
+            "custom_metric": None,
+        },
+        {
+            "index": 2,
+            "type": "dropset",
+            "weight_kg": None,
+            "reps": 5,
+            "rep_range": None,
+            "distance_meters": None,
+            "duration_seconds": None,
+            "rpe": None,
+            "custom_metric": None,
+        },
+    ]
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+    default_path = tmp_path / "default.json"
+    rest_only_path = tmp_path / "rest-only.json"
+    runner = CliRunner()
+
+    default_result = runner.invoke(
+        cli,
+        [
+            "--api-key",
+            "test-key",
+            "routines",
+            "enhance",
+            "routine-coach",
+            "--dry-run",
+            "--output",
+            str(default_path),
+        ],
+    )
+    rest_only_result = runner.invoke(
+        cli,
+        [
+            "--api-key",
+            "test-key",
+            "routines",
+            "enhance",
+            "routine-coach",
+            "--rest-only",
+            "--dry-run",
+            "--output",
+            str(rest_only_path),
+        ],
+    )
+
+    assert default_result.exit_code == 0, default_result.output
+    assert rest_only_result.exit_code == 0, rest_only_result.output
+    default_sets = json.loads(default_path.read_text())["routine"]["exercises"][0]["sets"]
+    rest_only_sets = json.loads(rest_only_path.read_text())["routine"]["exercises"][0]["sets"]
+    assert [item["weight_kg"] for item in default_sets] == [100.0, 50.0, 70.0]
+    assert [item["weight_kg"] for item in rest_only_sets] == [100.0, None, None]
+    assert "Added warmup: 50.0kg" in default_result.output
+    assert "Added dropset: 70.0kg" in default_result.output
+    assert "Added warmup" not in rest_only_result.output
+    assert "Added dropset" not in rest_only_result.output
+
+
+@respx.mock
+def test_enhance_reports_no_changes_when_rest_is_current() -> None:
+    routine_response = _enhance_routine_response(["5 x 5"])
+    routine_response["routine"]["exercises"][0]["rest_seconds"] = 120
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "--api-key",
+            "test-key",
+            "routines",
+            "enhance",
+            "routine-coach",
+            "--rest-only",
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "No significant changes needed" in result.output
+
+
+@respx.mock
+def test_enhance_fetch_error_is_reported_without_traceback() -> None:
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(400, json={"error": "routine unavailable"})
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        ["--api-key", "test-key", "routines", "enhance", "routine-coach", "--dry-run"],
+    )
+
+    assert result.exit_code == 1
+    assert "Failed to fetch routine:" in result.output
+    assert "Traceback" not in result.output
+
+
+@respx.mock
+def test_enhance_update_error_is_reported_without_traceback() -> None:
+    routine_response = _enhance_routine_response(["5 x 5"])
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+    put_route = respx.put("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(400, json={"error": "update rejected"})
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        ["--api-key", "test-key", "routines", "enhance", "routine-coach"],
+    )
+
+    assert put_route.called
+    assert result.exit_code == 1
+    assert "Failed to update routine:" in result.output
+    assert "Traceback" not in result.output
 
 
 @respx.mock

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from hevy_cli.utils import (
+    build_set_with_weight,
     calculate_dropset_weight,
     calculate_rest_seconds,
     calculate_warmup_weight,
@@ -69,6 +70,9 @@ class TestCalculateRestSeconds:
         assert calculate_rest_seconds(None) == 90
         assert calculate_rest_seconds("no range") == 90
 
+    def test_default_when_range_is_below_map(self) -> None:
+        assert calculate_rest_seconds("1-2") == 90
+
 
 class TestGetRpeForRange:
     def test_heavy_strength_rpe(self) -> None:
@@ -82,6 +86,15 @@ class TestGetRpeForRange:
 
     def test_default_rpe(self) -> None:
         assert get_rpe_for_range(None) == 7.5
+
+    def test_unparseable_input_uses_default(self) -> None:
+        assert get_rpe_for_range("not a range") == 7.5
+
+    def test_closest_lower_range_fallback(self) -> None:
+        assert get_rpe_for_range("7-9") == 8.0
+
+    def test_range_below_map_uses_default(self) -> None:
+        assert get_rpe_for_range("1-2") == 7.5
 
 
 class TestRoundToNearest25:
@@ -124,6 +137,9 @@ class TestCalculateDropsetWeight:
 
 
 class TestExtractRepRangeFromNotes:
+    def test_empty_notes_have_no_range(self) -> None:
+        assert extract_rep_range_from_notes(None) is None
+
     def test_extract_from_sets_x_reps(self) -> None:
         assert extract_rep_range_from_notes("3 x 8-12") == "8-12"
 
@@ -271,6 +287,33 @@ class TestEnhanceCoachNotes:
         notes = "8-12 reps | ADD weight when hitting the top of 8 - 12 rep range."
         rule = "Add weight when hitting top of 8-12 rep range"
         assert enhance_coach_notes(notes, progression_rule=rule) == notes
+
+    def test_different_progression_range_does_not_suppress_new_rule(self) -> None:
+        notes = "Add weight when hitting top of 10-12 rep range"
+        rule = "Add weight when hitting top of 8-12 rep range"
+        enhanced = enhance_coach_notes(notes, progression_rule=rule)
+        assert notes in enhanced
+        assert rule in enhanced
+
+
+class TestBuildSetWithWeight:
+    def test_derives_warmup_weight(self) -> None:
+        result = build_set_with_weight("warmup", reps=8, working_weight=100)
+        assert result["weight_kg"] == 50.0
+        assert result["reps"] == 8
+
+    def test_derives_dropset_weight(self) -> None:
+        result = build_set_with_weight("dropset", reps=10, working_weight=100)
+        assert result["weight_kg"] == 70.0
+        assert result["type"] == "dropset"
+
+    def test_plain_set_uses_working_weight(self) -> None:
+        result = build_set_with_weight("normal", working_weight=100)
+        assert result["weight_kg"] == 100
+
+    def test_explicit_weight_is_preserved(self) -> None:
+        result = build_set_with_weight("warmup", weight_kg=30, working_weight=100)
+        assert result["weight_kg"] == 30
 
 
 class TestValidateSetType:
