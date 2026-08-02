@@ -379,6 +379,12 @@ def enhance_routine(
     client = get_client(ctx)
     fmt = detect_format(ctx.obj.get("output_format"))
 
+    if rest_only and working_weight_multiplier != 1.0:
+        click.echo(
+            "⚠️ --working-weight-multiplier is ignored with --rest-only",
+            err=True,
+        )
+
     logger.info("enhancing_routine", routine_id=routine_id, dry_run=dry_run)
 
     # Step 1: Read original routine
@@ -406,6 +412,11 @@ def enhance_routine(
 
         # Calculate rest_seconds based on rep range
         rest_seconds = calculate_rest_seconds(rep_range) if rep_range else 90
+        original_rest = ex.get("rest_seconds")
+        if original_rest != rest_seconds:
+            changes_log.append(
+                f"  {ex.get('title', 'Exercise')}: rest {original_rest} -> {rest_seconds}"
+            )
 
         # Prefer the coach's maximum permitted RPE over a generic default.
         coach_rpe = extract_rpe_from_notes(original_notes)

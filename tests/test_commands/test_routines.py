@@ -574,7 +574,7 @@ def test_enhance_honors_real_coach_rpe_notes(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     enhanced = json.loads(output_path.read_text())["routine"]["exercises"]
     assert all("Target RPE" not in exercise["notes"] for exercise in enhanced)
-    assert enhanced[4]["notes"] == REAL_COACH_NOTES[4]
+    assert enhanced[4]["rest_seconds"] == 150
 
 
 @respx.mock
@@ -661,6 +661,50 @@ def test_enhance_rest_only_composes_with_dry_run(tmp_path: Path) -> None:
     exercise = json.loads(output_path.read_text())["routine"]["exercises"][0]
     assert exercise["notes"] == original_notes
     assert exercise["rest_seconds"] == 120
+    assert "Exercise 0: rest None -> 120" in result.output
+
+
+@respx.mock
+def test_enhance_logs_rest_change_in_all_modes() -> None:
+    routine_response = _enhance_routine_response(["5-8(Sobrecarga)"])
+    routine_response["routine"]["exercises"][0]["rest_seconds"] = 30
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        ["--api-key", "test-key", "routines", "enhance", "routine-coach", "--dry-run"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Exercise 0: rest 30 -> 120" in result.output
+
+
+@respx.mock
+def test_enhance_warns_when_multiplier_is_ignored_with_rest_only() -> None:
+    routine_response = _enhance_routine_response(["5-8(Sobrecarga)"])
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "--api-key",
+            "test-key",
+            "routines",
+            "enhance",
+            "routine-coach",
+            "--rest-only",
+            "--working-weight-multiplier",
+            "0.9",
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "--working-weight-multiplier is ignored with --rest-only" in result.output
 
 
 @respx.mock

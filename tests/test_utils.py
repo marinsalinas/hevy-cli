@@ -139,7 +139,20 @@ class TestExtractRepRangeFromNotes:
         assert extract_rep_range_from_notes("No rep info here") is None
 
     def test_does_not_treat_rpe_range_as_rep_range(self) -> None:
-        assert extract_rep_range_from_notes(COACH_NOTES[4]) is None
+        assert extract_rep_range_from_notes(COACH_NOTES[4]) == "3-3"
+
+    def test_single_rep_wave_uses_minimum_reps(self) -> None:
+        notes = "3 x 6 week four / 3 x 3 week one / 3 x 5 week three"
+        assert extract_rep_range_from_notes(notes) == "3-3"
+        assert calculate_rest_seconds(extract_rep_range_from_notes(notes)) == 150
+
+    def test_sets_x_range_takes_priority_over_single_reps(self) -> None:
+        assert extract_rep_range_from_notes("3 x 8-12 / 5 x 5") == "8-12"
+
+    def test_duration_style_note_uses_same_last_resort_heuristic(self) -> None:
+        rep_range = extract_rep_range_from_notes("2 x 20 seg")
+        assert rep_range == "20-20"
+        assert calculate_rest_seconds(rep_range) == 60
 
 
 class TestExtractRpeFromNotes:
@@ -152,14 +165,36 @@ class TestExtractRpeFromNotes:
 
     @pytest.mark.parametrize(
         ("notes", "expected"),
-        [("RPE@6-7.", 7.0), ("rpe@8", 8.0), ("( RPE @ 5 \u2013 6 )", 6.0)],
+        [
+            ('Rpe@6-7"', 7.0),
+            ("Rpe@6-7🏋️", 7.0),
+            ("Rpe@6\u22127", 7.0),
+            ("Rpe@6\u20107", 7.0),
+            ("rpe@8", 8.0),
+            ("( RPE @ 5 \u2013 6 )", 6.0),
+        ],
     )
     def test_accepts_case_whitespace_and_punctuation(self, notes: str, expected: float) -> None:
         assert extract_rpe_from_notes(notes) == expected
 
-    @pytest.mark.parametrize("notes", ["carpe diem", "carpet work", "RPE target 7", "RPE@11"])
+    @pytest.mark.parametrize(
+        "notes",
+        [
+            "carpe diem",
+            "carpet work",
+            "RPE target 7",
+            "RPE@11",
+            "rpe@6-7kg",
+            "RPE@6.5.2",
+            "RPE@6-7.5.2",
+        ],
+    )
     def test_rejects_unrelated_or_invalid_text(self, notes: str) -> None:
         assert extract_rpe_from_notes(notes) is None
+
+    @pytest.mark.parametrize("notes", ['Rpe@6-7"', "Rpe@6-7🏋️", "Rpe@6\u22127", "Rpe@6\u20107"])
+    def test_supported_terminators_prevent_generic_rpe(self, notes: str) -> None:
+        assert "Target RPE" not in enhance_coach_notes(notes, target_rpe=8.0)
 
 
 class TestEnhanceCoachNotes:

@@ -30,8 +30,8 @@ DEFAULT_RPE = 7.5
 
 _COACH_RPE_RE = re.compile(
     r"(?<![\w])rpe\s*@\s*(?P<low>\d+(?:\.\d+)?)"
-    r"(?:\s*[-\u2013\u2014]\s*(?P<high>\d+(?:\.\d+)?))?"
-    r"(?=$|[\s,.;:!?|)\]}])",
+    r"(?:\s*[-\u2010\u2013\u2014\u2212]\s*(?P<high>\d+(?:\.\d+)?))?+"
+    r"(?![\d.])(?![A-Za-z])",
     re.IGNORECASE,
 )
 
@@ -219,14 +219,21 @@ def extract_rep_range_from_notes(notes: str | None) -> str | None:
     if match:
         return match.group(1)
 
+    # Last resort: infer a single rep count from sets x reps prescriptions.
+    single_rep_matches = re.findall(r"\d+\s*x\s*(\d+)(?!\s*-)", clean_notes)
+    if single_rep_matches:
+        reps = min(int(value) for value in single_rep_matches)
+        return f"{reps}-{reps}"
+
     return None
 
 
 def extract_rpe_from_notes(notes: str | None) -> float | None:
     """Extract a coach-declared ``RPE@N`` or ``RPE@N-M`` value.
 
-    For a range, the upper end is returned because it represents the hardest
-    effort permitted by the coach. Values outside the RPE scale are ignored.
+    For a range, the upper end is returned because it represents the maximum
+    effort the coach permits: a ceiling, not a target. Values outside the RPE
+    scale are ignored.
     """
     if not notes:
         return None
