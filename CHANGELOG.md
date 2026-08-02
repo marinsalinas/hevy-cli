@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 releases may include breaking changes in minor versions.
 
+## [0.4.2](https://github.com/marinsalinas/hevy-cli/compare/v0.4.1...v0.4.2) (2026-08-02)
+
+
+### Fixed
+
+* **routines:** respect coach RPE when enhancing ([#32](https://github.com/marinsalinas/hevy-cli/issues/32)) ([a8482c7](https://github.com/marinsalinas/hevy-cli/commit/a8482c768699d182946a9bb085ba2663dc47260d))
+
 ## [0.4.1](https://github.com/marinsalinas/hevy-cli/compare/v0.4.0...v0.4.1) (2026-08-02)
 
 
