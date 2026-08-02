@@ -5,17 +5,29 @@ from __future__ import annotations
 import pytest
 
 from hevy_cli.utils import (
+    build_set_with_weight,
     calculate_dropset_weight,
     calculate_rest_seconds,
     calculate_warmup_weight,
     enhance_coach_notes,
     extract_rep_range_from_notes,
+    extract_rpe_from_notes,
     get_rpe_for_range,
     parse_rep_range,
     round_to_nearest_2_5,
     sanitize_routine_for_update,
     validate_set_type,
 )
+
+COACH_NOTES = [
+    "5-8(Sobrecarga)\n\nRpe@6-7",
+    "10-12(Sobrecarga)\n\nRpe@7-8",
+    "15-30 seg x lado\n\nRpe@5-6",
+    "12-20(Sobrecarga)\n\nRpe@8-9",
+    "3 x 3 (1 semana)\n3 x 4(2 semana)\n3 x 5 (3 semana)\n3 x 6(4 semana)\n\nRpe@7-9",
+    "8-12(Sobrecarga + Fase excéntrica)\n\nRpe@6-8",
+    "12-20(Sobrecarga) x lado*\n\nRpe@5-6\n\nDato: 2 series en parte anterior y 2 series en parte posterior *",
+]
 
 
 class TestParseRepRange:
@@ -58,6 +70,9 @@ class TestCalculateRestSeconds:
         assert calculate_rest_seconds(None) == 90
         assert calculate_rest_seconds("no range") == 90
 
+    def test_default_when_range_is_below_map(self) -> None:
+        assert calculate_rest_seconds("1-2") == 90
+
 
 class TestGetRpeForRange:
     def test_heavy_strength_rpe(self) -> None:
@@ -71,6 +86,15 @@ class TestGetRpeForRange:
 
     def test_default_rpe(self) -> None:
         assert get_rpe_for_range(None) == 7.5
+
+    def test_unparseable_input_uses_default(self) -> None:
+        assert get_rpe_for_range("not a range") == 7.5
+
+    def test_closest_lower_range_fallback(self) -> None:
+        assert get_rpe_for_range("7-9") == 8.0
+
+    def test_range_below_map_uses_default(self) -> None:
+        assert get_rpe_for_range("1-2") == 7.5
 
 
 class TestRoundToNearest25:
@@ -113,6 +137,9 @@ class TestCalculateDropsetWeight:
 
 
 class TestExtractRepRangeFromNotes:
+    def test_empty_notes_have_no_range(self) -> None:
+        assert extract_rep_range_from_notes(None) is None
+
     def test_extract_from_sets_x_reps(self) -> None:
         assert extract_rep_range_from_notes("3 x 8-12") == "8-12"
 
@@ -126,6 +153,81 @@ class TestExtractRepRangeFromNotes:
 
     def test_no_range_found(self) -> None:
         assert extract_rep_range_from_notes("No rep info here") is None
+
+    def test_does_not_treat_rpe_range_as_rep_range(self) -> None:
+        assert extract_rep_range_from_notes(COACH_NOTES[4]) == "3-3"
+
+    def test_single_rep_wave_uses_minimum_reps(self) -> None:
+        notes = "3 x 6 week four / 3 x 3 week one / 3 x 5 week three"
+        assert extract_rep_range_from_notes(notes) == "3-3"
+        assert calculate_rest_seconds(extract_rep_range_from_notes(notes)) == 150
+
+    def test_sets_x_range_takes_priority_over_single_reps(self) -> None:
+        assert extract_rep_range_from_notes("3 x 8-12 / 5 x 5") == "8-12"
+
+    def test_duration_style_note_uses_same_last_resort_heuristic(self) -> None:
+        rep_range = extract_rep_range_from_notes("2 x 20 seg")
+        assert rep_range == "20-20"
+        assert calculate_rest_seconds(rep_range) == 60
+
+
+class TestExtractRpeFromNotes:
+    @pytest.mark.parametrize(
+        ("notes", "expected"),
+        zip(COACH_NOTES, [7.0, 8.0, 6.0, 9.0, 9.0, 8.0, 6.0], strict=True),
+    )
+    def test_extracts_real_coach_notes(self, notes: str, expected: float) -> None:
+        assert extract_rpe_from_notes(notes) == expected
+
+    @pytest.mark.parametrize(
+        ("notes", "expected"),
+        [
+            ("Rpe@6-7", 7.0),
+            ('Rpe@6-7"', 7.0),
+            ("Rpe@6-7🏋️", 7.0),
+            ("Rpe@6-7\nNext instruction", 7.0),
+            ("Rpe@6\u22127", 7.0),
+            ("Rpe@6\u20107", 7.0),
+            ("Rpe@6\u20137", 7.0),
+            ("Rpe@6\u20147", 7.0),
+            ("Rpe@10", 10.0),
+            ("rpe@5.5", 5.5),
+            ("RPE@7-9.", 9.0),
+            ("RPE@7-9,", 9.0),
+            ("RPE@7-9;", 9.0),
+            ("RPE@7-9)", 9.0),
+            ("Rpe@6 - 7", 7.0),
+            ("Rpe@6-", 6.0),
+        ],
+    )
+    def test_accepts_case_whitespace_and_punctuation(self, notes: str, expected: float) -> None:
+        assert extract_rpe_from_notes(notes) == expected
+
+    @pytest.mark.parametrize(
+        "notes",
+        [
+            "carpe diem",
+            "carpet work",
+            "RPE target 7",
+            "RPE@11",
+            "rpe@6-7kg",
+            "terapia (rpe no aplica)",
+        ],
+    )
+    def test_rejects_unrelated_or_invalid_text(self, notes: str) -> None:
+        assert extract_rpe_from_notes(notes) is None
+
+    @pytest.mark.parametrize(
+        "notes",
+        [
+            "RPE@7-9.",
+            "RPE@7-9,",
+            "RPE@7-9;",
+            "RPE@7-9)",
+        ],
+    )
+    def test_supported_terminators_prevent_generic_rpe(self, notes: str) -> None:
+        assert "Target RPE" not in enhance_coach_notes(notes, target_rpe=8.0)
 
 
 class TestEnhanceCoachNotes:
@@ -171,6 +273,47 @@ class TestEnhanceCoachNotes:
         second = enhance_coach_notes(first, target_rpe=7.5, progression_rule=rule)
         assert second.count(rule) == 1
         assert second.count("Target RPE 7.5") == 1
+
+    @pytest.mark.parametrize("notes", COACH_NOTES)
+    def test_honors_coach_rpe_and_is_idempotent(self, notes: str) -> None:
+        rep_range = extract_rep_range_from_notes(notes)
+        rule = f"Add weight when hitting top of {rep_range} rep range" if rep_range else None
+        first = enhance_coach_notes(notes, target_rpe=9.5, progression_rule=rule)
+        second = enhance_coach_notes(first, target_rpe=9.5, progression_rule=rule)
+        assert "Target RPE" not in first
+        assert second == first
+
+    def test_equivalent_progression_is_not_duplicated(self) -> None:
+        notes = "8-12 reps | ADD weight when hitting the top of 8 - 12 rep range."
+        rule = "Add weight when hitting top of 8-12 rep range"
+        assert enhance_coach_notes(notes, progression_rule=rule) == notes
+
+    def test_different_progression_range_does_not_suppress_new_rule(self) -> None:
+        notes = "Add weight when hitting top of 10-12 rep range"
+        rule = "Add weight when hitting top of 8-12 rep range"
+        enhanced = enhance_coach_notes(notes, progression_rule=rule)
+        assert notes in enhanced
+        assert rule in enhanced
+
+
+class TestBuildSetWithWeight:
+    def test_derives_warmup_weight(self) -> None:
+        result = build_set_with_weight("warmup", reps=8, working_weight=100)
+        assert result["weight_kg"] == 50.0
+        assert result["reps"] == 8
+
+    def test_derives_dropset_weight(self) -> None:
+        result = build_set_with_weight("dropset", reps=10, working_weight=100)
+        assert result["weight_kg"] == 70.0
+        assert result["type"] == "dropset"
+
+    def test_plain_set_uses_working_weight(self) -> None:
+        result = build_set_with_weight("normal", working_weight=100)
+        assert result["weight_kg"] == 100
+
+    def test_explicit_weight_is_preserved(self) -> None:
+        result = build_set_with_weight("warmup", weight_kg=30, working_weight=100)
+        assert result["weight_kg"] == 30
 
 
 class TestValidateSetType:

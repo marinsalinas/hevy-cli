@@ -131,6 +131,22 @@ Example `routine.json`:
 hevy routines update routine-456 --file updated-routine.json
 ```
 
+### Enhance a routine
+
+```bash
+hevy routines enhance routine-456 --dry-run
+hevy routines enhance routine-456 --rest-only --dry-run
+```
+
+Enhance adds rest intervals and, when appropriate, generic RPE and progression
+guidance. Coach-declared intensity such as `Rpe@6-7`, `RPE@8`, or `rpe@5-6`
+is preserved and prevents a generic `Target RPE` from being added. Internally,
+the upper end of a coach range is used as the maximum permitted effort.
+
+Use `--rest-only` for coach-managed plans: it updates only `rest_seconds` and
+leaves exercise notes and weights untouched. It can be combined with
+`--dry-run` to preview the payload without updating the routine.
+
 ## Routine Folders
 
 ```bash
