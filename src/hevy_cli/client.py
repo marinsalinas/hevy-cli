@@ -100,7 +100,7 @@ class HevyClient:
         if status in (401, 403):
             raise AuthenticationError(error_msg)
         if status == 404:
-            raise NotFoundError("Resource", "unknown")
+            raise NotFoundError("Resource", error_msg)
         if status == 400:
             hint = ""
             if "folder_id" in str(error_msg).lower() or "folder" in str(error_msg).lower():

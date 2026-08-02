@@ -30,6 +30,26 @@ def test_workouts_list(sample_workout: dict) -> None:
 
 
 @respx.mock
+def test_debug_logs_stay_out_of_json_stdout(sample_workout: dict) -> None:
+    respx.get("https://api.hevy.com/v1/workouts").mock(
+        return_value=Response(
+            200,
+            json={"page": 1, "page_count": 1, "workouts": [sample_workout]},
+        )
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--api-key", "test-key", "--debug", "--format", "json", "workouts", "list"],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)[0]["id"] == sample_workout["id"]
+    assert "hevy_request" not in result.stdout
+    assert "hevy_request" in result.stderr
+
+
+@respx.mock
 def test_workouts_count() -> None:
     respx.get("https://api.hevy.com/v1/workouts/count").mock(
         return_value=Response(200, json={"workout_count": 42})
@@ -54,8 +74,9 @@ def test_authentication_error_is_clean() -> None:
         "Error: InvalidApiKey: [REDACTED]\n"
         "Check HEVY_API_KEY or run 'hevy config show' to verify your configuration.\n"
     )
-    assert "Traceback" not in result.output
-    assert "secret-test-key" not in result.output
+    assert "Traceback" not in result.stderr
+    assert "secret-test-key" not in result.stderr
+    assert "secret-test-key" not in result.stdout
 
 
 @respx.mock
@@ -69,7 +90,8 @@ def test_authentication_error_with_debug_includes_traceback() -> None:
     assert result.exit_code == 1
     assert "Traceback (most recent call last)" in result.stderr
     assert "AuthenticationError: InvalidApiKey: [REDACTED]" in result.stderr
-    assert "secret-test-key" not in result.output
+    assert "secret-test-key" not in result.stderr
+    assert "secret-test-key" not in result.stdout
 
 
 @respx.mock
@@ -82,8 +104,25 @@ def test_not_found_error_is_clean() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == "Error: Resource 'unknown' not found\n"
-    assert "Traceback" not in result.output
+    assert result.stderr == "Error: Resource 'missing' not found\n"
+    assert "Traceback" not in result.stderr
+
+
+@respx.mock
+def test_authentication_error_is_clean_for_folders_subgroup() -> None:
+    respx.get("https://api.hevy.com/v1/routine_folders").mock(
+        return_value=Response(401, json={"error": "InvalidApiKey"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--api-key", "test-key", "folders", "list"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == (
+        "Error: InvalidApiKey\n"
+        "Check HEVY_API_KEY or run 'hevy config show' to verify your configuration.\n"
+    )
+    assert "Traceback" not in result.stderr
 
 
 @respx.mock

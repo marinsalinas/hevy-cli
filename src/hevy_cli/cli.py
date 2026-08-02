@@ -27,6 +27,7 @@ def _configure_logging(verbose: bool, debug: bool) -> None:
         level = "ERROR"
 
     structlog.configure(
+        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
         wrapper_class=structlog.make_filtering_bound_logger(
             getattr(logging, level, 40)  # 40 = ERROR
         ),
@@ -122,16 +123,3 @@ def get_client(ctx: click.Context) -> HevyClient:
             "API key required. Set HEVY_API_KEY, use --api-key, or run: hevy config set auth.api_key YOUR_KEY"
         )
     return client
-
-
-def main() -> None:
-    """Entry point for the CLI."""
-    try:
-        cli()
-    except HevyError as e:
-        click.echo(f"Error: {e.message}", err=True)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

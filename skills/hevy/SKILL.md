@@ -89,7 +89,7 @@ data = json.loads(subprocess.check_output(["hevy", "workouts", "list", "--all", 
 | Exit code / output | Meaning | What to tell the user |
 |---|---|---|
 | `Error: InvalidApiKey` | API key wrong or missing | Check `HEVY_API_KEY` env var or run `hevy config show` |
-| `Error: … not found` | ID does not exist | Confirm the ID; for routines, try search-by-name with `hevy routines rename` |
+| `Error: Resource '<API message>' not found` | ID does not exist | Confirm the ID; for routines, try search-by-name with `hevy routines rename` |
 | `Error: Rate limit exceeded` | Hit the per-minute limit | The CLI auto-retries with backoff; if still failing, suggest a brief pause |
 | `Error: No such option: --foo` | You typed a flag wrong | Re-check `hevy <subcommand> --help` before retrying |
 
