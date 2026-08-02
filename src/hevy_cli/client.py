@@ -45,6 +45,37 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger()
 
+_NOT_FOUND_RESOURCES = {
+    "workouts": ("Workout", "Workouts"),
+    "routines": ("Routine", "Routines"),
+    "routine_folders": ("Folder", "Folders"),
+    "exercise_templates": ("Exercise template", "Exercise templates"),
+    "exercise_history": ("Exercise history", "Exercise history"),
+}
+_COLLECTION_ACTIONS = {"workouts": {"count", "events"}}
+
+
+def _not_found_error(response: httpx.Response, api_key: str) -> NotFoundError:
+    """Build a useful 404 error from a known API request path."""
+    try:
+        parts = response.request.url.path.strip("/").split("/")
+    except RuntimeError:
+        return NotFoundError("Resource")
+
+    if len(parts) < 2 or parts[0] != "v1":
+        return NotFoundError("Resource")
+
+    endpoint = parts[1]
+    names = _NOT_FOUND_RESOURCES.get(endpoint)
+    if names is None:
+        return NotFoundError("Resource")
+
+    item_name, collection_name = names
+    if len(parts) >= 3 and parts[2] not in _COLLECTION_ACTIONS.get(endpoint, set()):
+        resource_id = parts[2].replace(api_key, "[REDACTED]") if api_key else parts[2]
+        return NotFoundError(item_name, resource_id)
+    return NotFoundError(collection_name)
+
 
 class HevyClient:
     """Synchronous HTTP client for the Hevy v1 API."""
@@ -100,7 +131,7 @@ class HevyClient:
         if status in (401, 403):
             raise AuthenticationError(error_msg)
         if status == 404:
-            raise NotFoundError("Resource", error_msg)
+            raise _not_found_error(response, self.api_key)
         if status == 400:
             hint = ""
             if "folder_id" in str(error_msg).lower() or "folder" in str(error_msg).lower():

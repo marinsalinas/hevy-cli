@@ -95,17 +95,59 @@ def test_authentication_error_with_debug_includes_traceback() -> None:
 
 
 @respx.mock
-def test_not_found_error_is_clean() -> None:
+def test_not_found_item_uses_resource_name_and_id() -> None:
+    respx.get("https://api.hevy.com/v1/workouts/abc123").mock(
+        return_value=Response(404, json={"error": "workout not found"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--api-key", "test-key", "workouts", "get", "abc123"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == "Error: Workout 'abc123' not found\n"
+    assert "workout not found" not in result.stderr
+
+
+@respx.mock
+def test_not_found_item_redacts_api_key_from_id() -> None:
+    respx.get("https://api.hevy.com/v1/workouts/secret-test-key").mock(
+        return_value=Response(404, json={"error": "Not Found"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--api-key", "secret-test-key", "workouts", "get", "secret-test-key"],
+    )
+
+    assert result.exit_code == 1
+    assert result.stderr == "Error: Workout '[REDACTED]' not found\n"
+    assert "secret-test-key" not in result.stderr
+
+
+@respx.mock
+def test_not_found_collection_uses_resource_name() -> None:
     respx.get("https://api.hevy.com/v1/workouts/count").mock(
-        return_value=Response(404, json={"error": "missing"})
+        return_value=Response(404, json={"error": "Not Found"})
     )
     runner = CliRunner()
     result = runner.invoke(cli, ["--api-key", "test-key", "workouts", "count"])
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == "Error: Resource 'missing' not found\n"
+    assert result.stderr == "Error: Workouts not found\n"
     assert "Traceback" not in result.stderr
+
+
+@respx.mock
+def test_not_found_without_error_field_hides_raw_body() -> None:
+    respx.get("https://api.hevy.com/v1/workouts/count").mock(return_value=Response(404, json={}))
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--api-key", "test-key", "workouts", "count"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == "Error: Workouts not found\n"
+    assert "{}" not in result.stderr
 
 
 @respx.mock

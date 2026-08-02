@@ -22,8 +22,11 @@ class AuthenticationError(HevyError):
 class NotFoundError(HevyError):
     """Raised when a resource is not found (404)."""
 
-    def __init__(self, resource: str, resource_id: str) -> None:
-        super().__init__(f"{resource} '{resource_id}' not found", status_code=404)
+    def __init__(self, resource: str, resource_id: str | None = None) -> None:
+        message = (
+            f"{resource} '{resource_id}' not found" if resource_id else f"{resource} not found"
+        )
+        super().__init__(message, status_code=404)
 
 
 class ValidationError(HevyError):
