@@ -23,6 +23,7 @@ from ..utils import (
     extract_rep_range_from_notes,
     extract_rpe_from_notes,
     get_rpe_for_range,
+    parse_rep_range,
     sanitize_routine_for_update,
 )
 
@@ -409,13 +410,16 @@ def enhance_routine(
 
         # Extract rep range from notes
         rep_range = extract_rep_range_from_notes(original_notes)
+        rep_low, rep_high = parse_rep_range(rep_range)
+        inferred_single_reps = rep_low is not None and rep_low == rep_high
 
         # Calculate rest_seconds based on rep range
         rest_seconds = calculate_rest_seconds(rep_range) if rep_range else 90
         original_rest = ex.get("rest_seconds")
         if original_rest != rest_seconds:
+            original_rest_display = original_rest if original_rest is not None else "unset"
             changes_log.append(
-                f"  {ex.get('title', 'Exercise')}: rest {original_rest} -> {rest_seconds}"
+                f"  {ex.get('title', 'Exercise')}: rest {original_rest_display} -> {rest_seconds}"
             )
 
         # Prefer the coach's maximum permitted RPE over a generic default.
@@ -423,12 +427,12 @@ def enhance_routine(
         target_rpe = (
             coach_rpe
             if coach_rpe is not None
-            else (get_rpe_for_range(rep_range) if rep_range else None)
+            else (get_rpe_for_range(rep_range) if rep_range and not inferred_single_reps else None)
         )
 
         # Build progression rule based on rep range
         progression_rule = None
-        if rep_range:
+        if rep_range and not inferred_single_reps:
             progression_rule = f"Add weight when hitting top of {rep_range} rep range"
 
         # Enhance notes (append, never replace)

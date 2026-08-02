@@ -575,6 +575,46 @@ def test_enhance_honors_real_coach_rpe_notes(tmp_path: Path) -> None:
     enhanced = json.loads(output_path.read_text())["routine"]["exercises"]
     assert all("Target RPE" not in exercise["notes"] for exercise in enhanced)
     assert enhanced[4]["rest_seconds"] == 150
+    assert enhanced[4]["notes"] == REAL_COACH_NOTES[4]
+
+
+@respx.mock
+def test_enhance_uses_single_reps_only_for_rest(tmp_path: Path) -> None:
+    notes = [
+        "5 x 5",
+        "8-12",
+        "8-12(Sobrecarga) Rpe@7-8",
+    ]
+    routine_response = _enhance_routine_response(notes)
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+    output_path = tmp_path / "single-reps.json"
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "--api-key",
+            "test-key",
+            "routines",
+            "enhance",
+            "routine-coach",
+            "--dry-run",
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    exercises = json.loads(output_path.read_text())["routine"]["exercises"]
+    assert exercises[0]["rest_seconds"] == 120
+    assert exercises[0]["notes"] == "5 x 5"
+    assert exercises[1]["notes"] == (
+        "8-12 | Target RPE 7.5 | Add weight when hitting top of 8-12 rep range"
+    )
+    assert exercises[2]["notes"] == (
+        "8-12(Sobrecarga) Rpe@7-8 | Add weight when hitting top of 8-12 rep range"
+    )
 
 
 @respx.mock
@@ -661,7 +701,7 @@ def test_enhance_rest_only_composes_with_dry_run(tmp_path: Path) -> None:
     exercise = json.loads(output_path.read_text())["routine"]["exercises"][0]
     assert exercise["notes"] == original_notes
     assert exercise["rest_seconds"] == 120
-    assert "Exercise 0: rest None -> 120" in result.output
+    assert "Exercise 0: rest unset -> 120" in result.output
 
 
 @respx.mock
