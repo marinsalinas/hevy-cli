@@ -65,7 +65,7 @@ class LazyGroup(click.Group):
                         "Check HEVY_API_KEY or run 'hevy config show' to verify your configuration.",
                         err=True,
                     )
-            ctx.exit(1)
+            raise SystemExit(1) from None
 
     def list_commands(self, ctx: click.Context) -> list[str]:
         return sorted(self.COMMAND_MAP.keys())
