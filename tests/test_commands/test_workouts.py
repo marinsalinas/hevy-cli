@@ -30,6 +30,26 @@ def test_workouts_list(sample_workout: dict) -> None:
 
 
 @respx.mock
+def test_debug_logs_stay_out_of_json_stdout(sample_workout: dict) -> None:
+    respx.get("https://api.hevy.com/v1/workouts").mock(
+        return_value=Response(
+            200,
+            json={"page": 1, "page_count": 1, "workouts": [sample_workout]},
+        )
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--api-key", "test-key", "--debug", "--format", "json", "workouts", "list"],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)[0]["id"] == sample_workout["id"]
+    assert "hevy_request" not in result.stdout
+    assert "hevy_request" in result.stderr
+
+
+@respx.mock
 def test_workouts_count() -> None:
     respx.get("https://api.hevy.com/v1/workouts/count").mock(
         return_value=Response(200, json={"workout_count": 42})
@@ -38,6 +58,129 @@ def test_workouts_count() -> None:
     result = runner.invoke(cli, ["--api-key", "test-key", "workouts", "count"])
     assert result.exit_code == 0
     assert "42" in result.output
+
+
+@respx.mock
+def test_authentication_error_is_clean() -> None:
+    respx.get("https://api.hevy.com/v1/workouts/count").mock(
+        return_value=Response(401, json={"error": "InvalidApiKey: secret-test-key"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--api-key", "secret-test-key", "workouts", "count"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == (
+        "Error: InvalidApiKey: [REDACTED]\n"
+        "Check HEVY_API_KEY or run 'hevy config show' to verify your configuration.\n"
+    )
+    assert "Traceback" not in result.stderr
+    assert "secret-test-key" not in result.stderr
+    assert "secret-test-key" not in result.stdout
+
+
+@respx.mock
+def test_authentication_error_with_debug_includes_traceback() -> None:
+    respx.get("https://api.hevy.com/v1/workouts/count").mock(
+        return_value=Response(401, json={"error": "InvalidApiKey: secret-test-key"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--api-key", "secret-test-key", "--debug", "workouts", "count"])
+
+    assert result.exit_code == 1
+    assert "Traceback (most recent call last)" in result.stderr
+    assert "AuthenticationError: InvalidApiKey: [REDACTED]" in result.stderr
+    assert "secret-test-key" not in result.stderr
+    assert "secret-test-key" not in result.stdout
+
+
+@respx.mock
+def test_not_found_item_uses_resource_name_and_id() -> None:
+    respx.get("https://api.hevy.com/v1/workouts/abc123").mock(
+        return_value=Response(404, json={"error": "workout not found"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--api-key", "test-key", "workouts", "get", "abc123"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == "Error: Workout 'abc123' not found\n"
+    assert "workout not found" not in result.stderr
+
+
+@respx.mock
+def test_not_found_item_redacts_api_key_from_id() -> None:
+    respx.get("https://api.hevy.com/v1/workouts/secret-test-key").mock(
+        return_value=Response(404, json={"error": "Not Found"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--api-key", "secret-test-key", "workouts", "get", "secret-test-key"],
+    )
+
+    assert result.exit_code == 1
+    assert result.stderr == "Error: Workout '[REDACTED]' not found\n"
+    assert "secret-test-key" not in result.stderr
+
+
+@respx.mock
+def test_not_found_collection_uses_resource_name() -> None:
+    respx.get("https://api.hevy.com/v1/workouts/count").mock(
+        return_value=Response(404, json={"error": "Not Found"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--api-key", "test-key", "workouts", "count"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == "Error: Workouts not found\n"
+    assert "Traceback" not in result.stderr
+
+
+@respx.mock
+def test_not_found_without_error_field_hides_raw_body() -> None:
+    respx.get("https://api.hevy.com/v1/workouts/count").mock(return_value=Response(404, json={}))
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--api-key", "test-key", "workouts", "count"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == "Error: Workouts not found\n"
+    assert "{}" not in result.stderr
+
+
+@respx.mock
+def test_authentication_error_is_clean_for_folders_subgroup() -> None:
+    respx.get("https://api.hevy.com/v1/routine_folders").mock(
+        return_value=Response(401, json={"error": "InvalidApiKey"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--api-key", "test-key", "folders", "list"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == (
+        "Error: InvalidApiKey\n"
+        "Check HEVY_API_KEY or run 'hevy config show' to verify your configuration.\n"
+    )
+    assert "Traceback" not in result.stderr
+
+
+@respx.mock
+def test_json_error_does_not_write_partial_output() -> None:
+    respx.get("https://api.hevy.com/v1/workouts").mock(
+        return_value=Response(401, json={"error": "InvalidApiKey"})
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--api-key", "test-key", "--format", "json", "workouts", "list"],
+    )
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr.startswith("Error: InvalidApiKey\n")
 
 
 def test_workouts_list_no_api_key() -> None:

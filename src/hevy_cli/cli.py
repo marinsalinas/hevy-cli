@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import traceback
 from typing import ClassVar
 
 import click
@@ -13,7 +14,7 @@ import structlog
 from . import __version__
 from .client import HevyClient
 from .config import get_nested, load_config
-from .exceptions import HevyError
+from .exceptions import AuthenticationError, HevyError
 
 
 def _configure_logging(verbose: bool, debug: bool) -> None:
@@ -26,6 +27,7 @@ def _configure_logging(verbose: bool, debug: bool) -> None:
         level = "ERROR"
 
     structlog.configure(
+        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
         wrapper_class=structlog.make_filtering_bound_logger(
             getattr(logging, level, 40)  # 40 = ERROR
         ),
@@ -49,6 +51,22 @@ class LazyGroup(click.Group):
         "exercises": "hevy_cli.commands.exercises:exercises",
         "config": "hevy_cli.commands.config_cmd:config",
     }
+
+    def invoke(self, ctx: click.Context) -> object:
+        """Run a command, presenting expected API failures without a traceback."""
+        try:
+            return super().invoke(ctx)
+        except HevyError as exc:
+            if ctx.params.get("debug", False):
+                traceback.print_exc()
+            else:
+                click.secho(f"Error: {exc.message}", fg="red", err=True)
+                if isinstance(exc, AuthenticationError):
+                    click.echo(
+                        "Check HEVY_API_KEY or run 'hevy config show' to verify your configuration.",
+                        err=True,
+                    )
+            raise SystemExit(1) from None
 
     def list_commands(self, ctx: click.Context) -> list[str]:
         return sorted(self.COMMAND_MAP.keys())
@@ -105,16 +123,3 @@ def get_client(ctx: click.Context) -> HevyClient:
             "API key required. Set HEVY_API_KEY, use --api-key, or run: hevy config set auth.api_key YOUR_KEY"
         )
     return client
-
-
-def main() -> None:
-    """Entry point for the CLI."""
-    try:
-        cli()
-    except HevyError as e:
-        click.echo(f"Error: {e.message}", err=True)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

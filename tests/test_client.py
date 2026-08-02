@@ -2,21 +2,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pytest
 import respx
 from httpx import Response
 
+from hevy_cli.client import HevyClient
 from hevy_cli.exceptions import (
     AuthenticationError,
     NotFoundError,
     RateLimitError,
     ValidationError,
 )
-
-if TYPE_CHECKING:
-    from hevy_cli.client import HevyClient
 
 
 class TestListWorkouts:
@@ -70,6 +66,24 @@ class TestWorkoutCount:
 
 
 class TestErrorHandling:
+    def test_empty_api_key_does_not_mangle_error_message(self) -> None:
+        with (
+            HevyClient(api_key="") as client,
+            pytest.raises(AuthenticationError, match=r"^InvalidApiKey$") as exc_info,
+        ):
+            client._handle_response(Response(401, json={"error": "InvalidApiKey"}))
+
+        assert exc_info.value.message == "InvalidApiKey"
+
+    def test_api_key_is_redacted_from_error_message(self) -> None:
+        with (
+            HevyClient(api_key="secret-test-key") as client,
+            pytest.raises(AuthenticationError) as exc_info,
+        ):
+            client._handle_response(Response(401, json={"error": "InvalidApiKey: secret-test-key"}))
+
+        assert exc_info.value.message == "InvalidApiKey: [REDACTED]"
+
     @respx.mock
     def test_authentication_error(self, client: HevyClient) -> None:
         respx.get("/v1/workouts").mock(
