@@ -10,12 +10,23 @@ from hevy_cli.utils import (
     calculate_warmup_weight,
     enhance_coach_notes,
     extract_rep_range_from_notes,
+    extract_rpe_from_notes,
     get_rpe_for_range,
     parse_rep_range,
     round_to_nearest_2_5,
     sanitize_routine_for_update,
     validate_set_type,
 )
+
+COACH_NOTES = [
+    "5-8(Sobrecarga)\n\nRpe@6-7",
+    "10-12(Sobrecarga)\n\nRpe@7-8",
+    "15-30 seg x lado\n\nRpe@5-6",
+    "12-20(Sobrecarga)\n\nRpe@8-9",
+    "3 x 3 (1 semana)\n3 x 4(2 semana)\n3 x 5 (3 semana)\n3 x 6(4 semana)\n\nRpe@7-9",
+    "8-12(Sobrecarga + Fase excéntrica)\n\nRpe@6-8",
+    "12-20(Sobrecarga) x lado*\n\nRpe@5-6\n\nDato: 2 series en parte anterior y 2 series en parte posterior *",
+]
 
 
 class TestParseRepRange:
@@ -127,6 +138,29 @@ class TestExtractRepRangeFromNotes:
     def test_no_range_found(self) -> None:
         assert extract_rep_range_from_notes("No rep info here") is None
 
+    def test_does_not_treat_rpe_range_as_rep_range(self) -> None:
+        assert extract_rep_range_from_notes(COACH_NOTES[4]) is None
+
+
+class TestExtractRpeFromNotes:
+    @pytest.mark.parametrize(
+        ("notes", "expected"),
+        zip(COACH_NOTES, [7.0, 8.0, 6.0, 9.0, 9.0, 8.0, 6.0], strict=True),
+    )
+    def test_extracts_real_coach_notes(self, notes: str, expected: float) -> None:
+        assert extract_rpe_from_notes(notes) == expected
+
+    @pytest.mark.parametrize(
+        ("notes", "expected"),
+        [("RPE@6-7.", 7.0), ("rpe@8", 8.0), ("( RPE @ 5 \u2013 6 )", 6.0)],
+    )
+    def test_accepts_case_whitespace_and_punctuation(self, notes: str, expected: float) -> None:
+        assert extract_rpe_from_notes(notes) == expected
+
+    @pytest.mark.parametrize("notes", ["carpe diem", "carpet work", "RPE target 7", "RPE@11"])
+    def test_rejects_unrelated_or_invalid_text(self, notes: str) -> None:
+        assert extract_rpe_from_notes(notes) is None
+
 
 class TestEnhanceCoachNotes:
     def test_append_rpe(self) -> None:
@@ -171,6 +205,20 @@ class TestEnhanceCoachNotes:
         second = enhance_coach_notes(first, target_rpe=7.5, progression_rule=rule)
         assert second.count(rule) == 1
         assert second.count("Target RPE 7.5") == 1
+
+    @pytest.mark.parametrize("notes", COACH_NOTES)
+    def test_honors_coach_rpe_and_is_idempotent(self, notes: str) -> None:
+        rep_range = extract_rep_range_from_notes(notes)
+        rule = f"Add weight when hitting top of {rep_range} rep range" if rep_range else None
+        first = enhance_coach_notes(notes, target_rpe=9.5, progression_rule=rule)
+        second = enhance_coach_notes(first, target_rpe=9.5, progression_rule=rule)
+        assert "Target RPE" not in first
+        assert second == first
+
+    def test_equivalent_progression_is_not_duplicated(self) -> None:
+        notes = "8-12 reps | ADD weight when hitting the top of 8 - 12 rep range."
+        rule = "Add weight when hitting top of 8-12 rep range"
+        assert enhance_coach_notes(notes, progression_rule=rule) == notes
 
 
 class TestValidateSetType:

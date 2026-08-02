@@ -48,7 +48,7 @@ All commands accept `--format json` (default for piping) or `--format table|yaml
 | List routines | `hevy routines list --format json` (add `--all` for full set) |
 | Get one routine | `hevy routines get <id-or-uuid> --format json` |
 | Rename a routine | `hevy routines rename <id-or-search> "<new title>"` |
-| Enhance with smart defaults | `hevy routines enhance <id> --format json` (adds rest_seconds, RPE) |
+| Enhance with smart defaults | `hevy routines enhance <id> --format json` (honors `Rpe@N-M` coach notes; add `--rest-only` to leave notes untouched) |
 
 ### Folders
 

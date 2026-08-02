@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+from typing import TYPE_CHECKING
 
 import pytest
 import respx
@@ -14,6 +15,9 @@ from pydantic import ValidationError as PydanticValidationError
 from hevy_cli.cli import cli
 from hevy_cli.commands.routines import _normalize_routine_data
 from hevy_cli.models import RoutineUpdateInput
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @respx.mock
@@ -494,6 +498,169 @@ def test_normalize_invalid_set_type_defaults_to_normal() -> None:
 
 
 # ── enhance command tests ──────────────────────────────────────────────────
+
+REAL_COACH_NOTES = [
+    "5-8(Sobrecarga)\n\nRpe@6-7",
+    "10-12(Sobrecarga)\n\nRpe@7-8",
+    "15-30 seg x lado\n\nRpe@5-6",
+    "12-20(Sobrecarga)\n\nRpe@8-9",
+    "3 x 3 (1 semana)\n3 x 4(2 semana)\n3 x 5 (3 semana)\n3 x 6(4 semana)\n\nRpe@7-9",
+    "8-12(Sobrecarga + Fase excéntrica)\n\nRpe@6-8",
+    "12-20(Sobrecarga) x lado*\n\nRpe@5-6\n\nDato: 2 series en parte anterior y 2 series en parte posterior *",
+]
+
+
+def _enhance_routine_response(notes: list[str]) -> dict:
+    exercises = []
+    for index, exercise_notes in enumerate(notes):
+        exercises.append(
+            {
+                "index": index,
+                "title": f"Exercise {index}",
+                "exercise_template_id": "D04AC939",
+                "supersets_id": None,
+                "rest_seconds": None,
+                "notes": exercise_notes,
+                "sets": [
+                    {
+                        "index": 0,
+                        "type": "normal",
+                        "weight_kg": 80,
+                        "reps": 10,
+                        "rep_range": None,
+                        "distance_meters": None,
+                        "duration_seconds": None,
+                        "rpe": None,
+                        "custom_metric": None,
+                    }
+                ],
+            }
+        )
+    return {
+        "routine": {
+            "id": "routine-coach",
+            "title": "Coach Plan",
+            "folder_id": None,
+            "notes": None,
+            "updated_at": "2024-08-14T12:00:00Z",
+            "created_at": "2024-08-14T12:00:00Z",
+            "exercises": exercises,
+        }
+    }
+
+
+@respx.mock
+def test_enhance_honors_real_coach_rpe_notes(tmp_path: Path) -> None:
+    routine_response = _enhance_routine_response(REAL_COACH_NOTES)
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+    output_path = tmp_path / "enhanced.json"
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "--api-key",
+            "test-key",
+            "routines",
+            "enhance",
+            "routine-coach",
+            "--dry-run",
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    enhanced = json.loads(output_path.read_text())["routine"]["exercises"]
+    assert all("Target RPE" not in exercise["notes"] for exercise in enhanced)
+    assert enhanced[4]["notes"] == REAL_COACH_NOTES[4]
+
+
+@respx.mock
+def test_enhance_without_coach_rpe_keeps_generic_target(tmp_path: Path) -> None:
+    routine_response = _enhance_routine_response(["5-8(Sobrecarga)"])
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+    output_path = tmp_path / "enhanced.json"
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "--api-key",
+            "test-key",
+            "routines",
+            "enhance",
+            "routine-coach",
+            "--dry-run",
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    notes = json.loads(output_path.read_text())["routine"]["exercises"][0]["notes"]
+    assert notes == (
+        "5-8(Sobrecarga) | Target RPE 8.0 | Add weight when hitting top of 5-8 rep range"
+    )
+
+
+@respx.mock
+def test_enhance_rest_only_leaves_notes_and_weights_untouched() -> None:
+    original_notes = REAL_COACH_NOTES[-1]
+    routine_response = _enhance_routine_response([original_notes])
+    sets = routine_response["routine"]["exercises"][0]["sets"]
+    sets.insert(0, {**sets[0], "index": 0, "type": "warmup", "weight_kg": None})
+    sets.append({**sets[-1], "index": 2, "type": "dropset", "weight_kg": None})
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+    put_route = respx.put("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        ["--api-key", "test-key", "routines", "enhance", "routine-coach", "--rest-only"],
+    )
+
+    assert result.exit_code == 0, result.output
+    body = json.loads(put_route.calls.last.request.content)["routine"]
+    exercise = body["exercises"][0]
+    assert exercise["notes"] == original_notes
+    assert [item.get("weight_kg") for item in exercise["sets"]] == [None, 80.0, None]
+    assert exercise["rest_seconds"] == 90
+
+
+@respx.mock
+def test_enhance_rest_only_composes_with_dry_run(tmp_path: Path) -> None:
+    original_notes = REAL_COACH_NOTES[0]
+    routine_response = _enhance_routine_response([original_notes])
+    respx.get("https://api.hevy.com/v1/routines/routine-coach").mock(
+        return_value=Response(200, json=routine_response)
+    )
+    output_path = tmp_path / "rest-only.json"
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "--api-key",
+            "test-key",
+            "routines",
+            "enhance",
+            "routine-coach",
+            "--rest-only",
+            "--dry-run",
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    exercise = json.loads(output_path.read_text())["routine"]["exercises"][0]
+    assert exercise["notes"] == original_notes
+    assert exercise["rest_seconds"] == 120
 
 
 @respx.mock

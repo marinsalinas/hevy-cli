@@ -28,6 +28,13 @@ REST_MAP: dict[str, tuple[int, float]] = {
 DEFAULT_REST_SECONDS = 90
 DEFAULT_RPE = 7.5
 
+_COACH_RPE_RE = re.compile(
+    r"(?<![\w])rpe\s*@\s*(?P<low>\d+(?:\.\d+)?)"
+    r"(?:\s*[-\u2013\u2014]\s*(?P<high>\d+(?:\.\d+)?))?"
+    r"(?=$|[\s,.;:!?|)\]}])",
+    re.IGNORECASE,
+)
+
 
 def parse_rep_range(rep_range_str: str | None) -> tuple[int | None, int | None]:
     """Parse a rep range string like '8-12' or '3 x 8-12'.
@@ -198,8 +205,8 @@ def extract_rep_range_from_notes(notes: str | None) -> str | None:
     if not notes:
         return None
 
-    # Clean up the notes
-    clean_notes = notes.replace("\\n", " ").replace("\n", " ")
+    # RPE ranges describe intensity, not repetitions.
+    clean_notes = _COACH_RPE_RE.sub(" ", notes).replace("\\n", " ").replace("\n", " ")
 
     # Try to find rep range patterns
     # Priority: look for patterns with x (sets x reps)
@@ -213,6 +220,49 @@ def extract_rep_range_from_notes(notes: str | None) -> str | None:
         return match.group(1)
 
     return None
+
+
+def extract_rpe_from_notes(notes: str | None) -> float | None:
+    """Extract a coach-declared ``RPE@N`` or ``RPE@N-M`` value.
+
+    For a range, the upper end is returned because it represents the hardest
+    effort permitted by the coach. Values outside the RPE scale are ignored.
+    """
+    if not notes:
+        return None
+
+    match = _COACH_RPE_RE.search(notes)
+    if not match:
+        return None
+
+    low = float(match.group("low"))
+    high = float(match.group("high") or match.group("low"))
+    if not 0 <= low <= high <= 10:
+        return None
+    return high
+
+
+def _has_equivalent_progression(notes: str, progression_rule: str) -> bool:
+    """Return whether notes already contain the generated progression rule."""
+
+    def normalize(value: str) -> str:
+        return re.sub(r"\s+", " ", value).strip().casefold()
+
+    if normalize(progression_rule) in normalize(notes):
+        return True
+
+    requested_range = parse_rep_range(progression_rule)
+    if requested_range == (None, None):
+        return False
+    for match in re.finditer(
+        r"add\s+weight\s+when\s+hitting\s+(?:the\s+)?top\s+of\s+"
+        r"\d+\s*-\s*\d+\s+rep\s+range",
+        notes,
+        re.IGNORECASE,
+    ):
+        if parse_rep_range(match.group()) == requested_range:
+            return True
+    return False
 
 
 def enhance_coach_notes(
@@ -240,12 +290,12 @@ def enhance_coach_notes(
     notes_text = original_notes.strip()
     additions: list[str] = []
 
-    if target_rpe is not None:
+    if target_rpe is not None and extract_rpe_from_notes(notes_text) is None:
         rpe_str = f"Target RPE {target_rpe}"
         if rpe_str not in notes_text:
             additions.append(rpe_str)
 
-    if progression_rule and progression_rule not in notes_text:
+    if progression_rule and not _has_equivalent_progression(notes_text, progression_rule):
         additions.append(progression_rule)
 
     if not additions:

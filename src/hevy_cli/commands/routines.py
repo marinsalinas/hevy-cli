@@ -21,6 +21,7 @@ from ..utils import (
     calculate_warmup_weight,
     enhance_coach_notes,
     extract_rep_range_from_notes,
+    extract_rpe_from_notes,
     get_rpe_for_range,
     sanitize_routine_for_update,
 )
@@ -346,6 +347,11 @@ def rename_routine(ctx: click.Context, id_or_search: str, new_name: str) -> None
 )
 @click.option("--dry-run", is_flag=True, help="Preview changes without applying")
 @click.option(
+    "--rest-only",
+    is_flag=True,
+    help="Apply only rest_seconds; leave exercise notes and weights untouched",
+)
+@click.option(
     "--working-weight-multiplier",
     default=1.0,
     type=float,
@@ -358,12 +364,15 @@ def enhance_routine(
     routine_id: str,
     output_path: str | None,
     dry_run: bool,
+    rest_only: bool,
     working_weight_multiplier: float,
 ) -> None:
     """Enhance a routine with smart defaults (rest_seconds, RPE, progression rules).
 
     Follows the 3-step pattern: read → enhance → update.
-    Preserves all coach data (set types, notes, exercise order).
+    Preserves all coach data (set types, notes, exercise order). Existing
+    RPE@N or RPE@N-M guidance takes precedence over generated RPE guidance.
+    With --rest-only, only rest_seconds is changed.
 
     ROUTINE_ID is the UUID of the routine to enhance.
     """
@@ -398,8 +407,13 @@ def enhance_routine(
         # Calculate rest_seconds based on rep range
         rest_seconds = calculate_rest_seconds(rep_range) if rep_range else 90
 
-        # Get RPE for the rep range
-        target_rpe = get_rpe_for_range(rep_range) if rep_range else None
+        # Prefer the coach's maximum permitted RPE over a generic default.
+        coach_rpe = extract_rpe_from_notes(original_notes)
+        target_rpe = (
+            coach_rpe
+            if coach_rpe is not None
+            else (get_rpe_for_range(rep_range) if rep_range else None)
+        )
 
         # Build progression rule based on rep range
         progression_rule = None
@@ -407,11 +421,13 @@ def enhance_routine(
             progression_rule = f"Add weight when hitting top of {rep_range} rep range"
 
         # Enhance notes (append, never replace)
-        enhanced_notes = enhance_coach_notes(
-            original_notes,
-            target_rpe=target_rpe,
-            progression_rule=progression_rule,
-        )
+        enhanced_notes = original_notes
+        if not rest_only:
+            enhanced_notes = enhance_coach_notes(
+                original_notes,
+                target_rpe=target_rpe,
+                progression_rule=progression_rule,
+            )
 
         if enhanced_notes != original_notes:
             changes_log.append(f"  {ex.get('title', 'Exercise')}: enhanced notes")
@@ -430,7 +446,7 @@ def enhance_routine(
 
             # Calculate warmup/dropset weights if working weight known
             final_weight = weight_kg
-            if working_weight and weight_kg is None:
+            if not rest_only and working_weight and weight_kg is None:
                 if set_type == "warmup":
                     final_weight = calculate_warmup_weight(working_weight)
                     changes_log.append(f"    Added warmup: {final_weight}kg")
