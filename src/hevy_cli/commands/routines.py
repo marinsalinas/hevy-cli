@@ -241,7 +241,10 @@ def create_routine(ctx: click.Context, file_path: str) -> None:
     fmt = detect_format(ctx.obj.get("output_format"))
     data = client.load_json_file(file_path)
     routine_data = data.get("routine", data)
+    routine = try:
     routine = RoutineInput.model_validate(routine_data)
+except Exception as e:
+    raise click.ClickException(f"invalid routine file: {e}")
     result = client.create_routine(routine)
     output(result, fmt=fmt, columns=ROUTINE_COLUMNS, title="Created Routine")
     click.echo("✅ Routine created", err=True)
