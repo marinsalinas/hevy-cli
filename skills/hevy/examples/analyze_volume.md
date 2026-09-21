@@ -28,8 +28,14 @@ Hevy attaches a `primary_muscle_group` to each exercise template, but workout pa
 import json, subprocess
 from collections import defaultdict
 
-workouts = json.loads(subprocess.check_output(["hevy", "workouts", "list", "--all", "--format", "json"]))
-templates = json.loads(subprocess.check_output(["hevy", "exercises", "list", "--all", "--page-size", "100", "--format", "json"]))
+workouts = json.loads(
+    subprocess.check_output(["hevy", "workouts", "list", "--all", "--format", "json"])
+)
+templates = json.loads(
+    subprocess.check_output(
+        ["hevy", "exercises", "list", "--all", "--page-size", "100", "--format", "json"]
+    )
+)
 
 muscle_by_id = {t["id"]: t.get("primary_muscle_group", "unknown") for t in templates}
 volume = defaultdict(float)
@@ -55,7 +61,9 @@ For week-over-week comparison, group by ISO week:
 import json, subprocess, datetime
 from collections import defaultdict
 
-workouts = json.loads(subprocess.check_output(["hevy", "workouts", "list", "--all", "--format", "json"]))
+workouts = json.loads(
+    subprocess.check_output(["hevy", "workouts", "list", "--all", "--format", "json"])
+)
 weekly = defaultdict(float)
 for w in workouts:
     iso = datetime.datetime.fromisoformat(w["start_time"].replace("Z", "+00:00")).isocalendar()
