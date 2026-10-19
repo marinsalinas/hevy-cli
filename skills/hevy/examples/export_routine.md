@@ -49,7 +49,9 @@ import json, subprocess, sys
 source_id = sys.argv[1]
 new_title = sys.argv[2]
 
-routine = json.loads(subprocess.check_output(["hevy", "routines", "get", source_id, "--format", "json"]))
+routine = json.loads(
+    subprocess.check_output(["hevy", "routines", "get", source_id, "--format", "json"])
+)
 
 # Strip server-managed fields so we can POST it as a new routine
 for f in ("id", "created_at", "updated_at"):
@@ -62,6 +64,7 @@ for ex in routine.get("exercises", []):
 
 # Write to a temp file and create
 import tempfile
+
 with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
     json.dump({"routine": routine}, f)
     path = f.name
