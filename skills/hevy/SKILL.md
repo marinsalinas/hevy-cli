@@ -81,7 +81,10 @@ For ad-hoc analysis, prefer Python over jq when the logic gets non-trivial:
 
 ```python
 import json, subprocess
-data = json.loads(subprocess.check_output(["hevy", "workouts", "list", "--all", "--format", "json"]))
+
+data = json.loads(
+    subprocess.check_output(["hevy", "workouts", "list", "--all", "--format", "json"])
+)
 ```
 
 ## Error patterns to expect
