@@ -29,12 +29,18 @@ Epley: `weight × (1 + reps / 30)`. Useful when comparing across rep ranges.
 import json, subprocess, sys
 
 template_id = sys.argv[1] if len(sys.argv) > 1 else input("template id: ")
-sets_json = subprocess.check_output(["hevy", "exercises", "history", template_id, "--format", "json"])
-sets = [s for entry in json.loads(sets_json) for s in entry.get("sets", []) if s.get("type") != "warmup"]
+sets_json = subprocess.check_output(
+    ["hevy", "exercises", "history", template_id, "--format", "json"]
+)
+sets = [
+    s for entry in json.loads(sets_json) for s in entry.get("sets", []) if s.get("type") != "warmup"
+]
+
 
 def epley(s):
     w, r = s.get("weight_kg") or 0, s.get("reps") or 0
     return w * (1 + r / 30) if r > 0 else 0
+
 
 best = max(sets, key=epley)
 print(f"e1RM = {epley(best):.1f} kg  ({best['weight_kg']} kg × {best['reps']} reps)")
@@ -47,7 +53,9 @@ For each exercise the user trained recently, check if a working set in the last 
 ```python
 import json, subprocess, datetime, collections
 
-workouts = json.loads(subprocess.check_output(["hevy", "workouts", "list", "--all", "--format", "json"]))
+workouts = json.loads(
+    subprocess.check_output(["hevy", "workouts", "list", "--all", "--format", "json"])
+)
 cutoff = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=30)).isoformat()
 
 # Index every set by exercise template, keyed by date
@@ -59,7 +67,9 @@ for w in workouts:
                 continue
             weight = s.get("weight_kg") or 0
             reps = s.get("reps") or 0
-            sets_by_ex[ex["exercise_template_id"]].append((w["start_time"], weight * reps, weight, reps))
+            sets_by_ex[ex["exercise_template_id"]].append(
+                (w["start_time"], weight * reps, weight, reps)
+            )
 
 prs = []
 for ex_id, history in sets_by_ex.items():
@@ -73,11 +83,19 @@ for ex_id, history in sets_by_ex.items():
         prs.append((ex_id, new_best, prior_best))
 
 # Resolve exercise names
-templates = {t["id"]: t["title"] for t in
-             json.loads(subprocess.check_output(["hevy", "exercises", "list", "--all", "--page-size", "100", "--format", "json"]))}
+templates = {
+    t["id"]: t["title"]
+    for t in json.loads(
+        subprocess.check_output(
+            ["hevy", "exercises", "list", "--all", "--page-size", "100", "--format", "json"]
+        )
+    )
+}
 
 for ex_id, (date, _, w, r), prior in prs:
-    print(f"PR! {templates.get(ex_id, ex_id)}: {w}kg × {r} on {date[:10]} (prior best volume: {prior})")
+    print(
+        f"PR! {templates.get(ex_id, ex_id)}: {w}kg × {r} on {date[:10]} (prior best volume: {prior})"
+    )
 ```
 
 ## Notes
